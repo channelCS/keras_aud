@@ -14,12 +14,14 @@ from keras.models import load_model
 from keras import backend as K
 import numpy as np
 
+############################# Keras shape #############################
 def kr(t,m=None):
     if m is None:
         return t._keras_shape
     else:
         return t._keras_shape[m]
-
+    
+########################### BASIC DNN #################################
 def dnn(input_neurons,input_dim,dropout,num_classes,act1=None,act2=None,act3=None,act4='softmax'):
     print "Activation 1 {} 2 {} 3 {} 4 {}".format(act1,act2,act3,act4)
     print "Model DNN"
@@ -38,6 +40,8 @@ def dnn(input_neurons,input_dim,dropout,num_classes,act1=None,act2=None,act3=Non
                   metrics=['accuracy'])
     
     return model
+
+########################### BASIC CNN #################################
 
 def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
                          filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None):
@@ -64,6 +68,7 @@ def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
     
     return model
 
+########################### BASIC RNN #################################
 def rnn(input_neurons,input_dim,num_classes):
     main_input = Input(shape=(1,input_dim), name='main_input')
     x = LSTM(32)(main_input)
@@ -82,6 +87,8 @@ def rnn(input_neurons,input_dim,num_classes):
               metrics=['accuracy'])
 
     return model
+
+########################### BASIC CRNN #################################
 
 def cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     
@@ -110,7 +117,7 @@ def cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act
     
     return model
 
-
+########################### BASIC FCRNN #################################
 def feature_cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     #Extract features using CNN and pass them as a input to LSTM
     main_input = Input(shape=(1,dimx,dimy))
@@ -132,7 +139,7 @@ def feature_cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,
     
     return model
 
-############################# CNN with biderectional lstm #############################
+############################# BASIC CBRNN #############################
 def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     print "CBRNN"
     main_input = Input(shape=(1,dimx,dimy))
@@ -161,8 +168,9 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     
     return model
 
-############################# DYNAMIC MODELS #############################
+########################################### DYNAMIC MODELS ###########################################
 
+########################### DYNAMIC DNN #################################
 def dnn_dynamic(input_neurons,input_dim,num_classes,layers=0,acts=[],drops=[]):
     layers2 = layers-1
     last    = acts.pop()
@@ -187,6 +195,8 @@ def dnn_dynamic(input_neurons,input_dim,num_classes,layers=0,acts=[],drops=[]):
               metrics=['accuracy'])
 
     return model
+
+########################### DYNAMIC CNN #################################
 
 def cnn_dynamic(input_neurons,dimx,dimy,nb_filter,
                          filter_length,num_classes,layers=0,pools=[],acts=[],drops=[],bn=False):
