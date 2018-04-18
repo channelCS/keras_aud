@@ -1,8 +1,6 @@
 mel:
     fs:
     - 44100.  
-    n_fft:
-    - 1024.
     n_mels:
     - 40
     fmin:
@@ -12,8 +10,6 @@ mel:
     mono:
     - True
     hamming_window:
-    - 1024.
-    nperseg:
     - 1024.
     noverlap:
     - 0
@@ -27,8 +23,6 @@ mel:
 logmel:
     fs:
     - 44100.  
-    n_fft:
-    - 1024.
     n_mels:
     - 40
     fmin:
@@ -38,8 +32,6 @@ logmel:
     mono:
     - True
     hamming_window:
-    - 1024.
-    nperseg:
     - 1024.
     noverlap:
     - 0
