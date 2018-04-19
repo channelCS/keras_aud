@@ -7,10 +7,11 @@ Email - akshitadvlp@gmail.com
 
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import Conv2D, MaxPooling2D, Conv2DTranspose
-from keras.layers import BatchNormalization, ZeroPadding2D, GlobalAveragePooling2D
+from keras.layers import Conv2D, Conv2DTranspose
+from keras.layers import BatchNormalization, ZeroPadding2D
 from keras.layers import Embedding, LSTM, Reshape, Bidirectional, TimeDistributed, Permute
 from keras.models import load_model
+from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras import backend as K
 import numpy as np
 
@@ -209,18 +210,26 @@ def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
         if bn:
             x=BatchNormalization()(x)
         if pools != []:
-            x = MaxPooling2D(pool_size=pools[i])(x)
+            if pools[i][0]=='max':
+                x = MaxPooling2D(pool_size=pools[i][1])(x)
+            elif pools[i][0]=='avg':
+                x = AveragePooling2D(pool_size=pools[i][1])(x)
+            elif pools[i][0]=='globmax':
+                x = GlobalMaxPooling2D()(x)
+            elif pools[i][0]=='globavg':
+                x = GlobalAveragePooling2D()(x)
         if drops != []:
             x = Dropout(drops[i])(x)
 
-    flat = Flatten()(x)
+    if pools[-1][0]=='max' or pools[-1][0]=='avg':
+        x = Flatten()(x)
     if end_dense != {}:
-        flat = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(flat)
+        x = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(x)
         try:
-            flat = Dropout(end_dense['dropout'])(flat)
+            x = Dropout(end_dense['dropout'])(x)
         except:
             pass
-    score = Dense(num_classes,activation=last,name='score')(flat)
+    score = Dense(num_classes,activation=last,name='score')(x)
     
     model = Model(inpx,score)
     model.compile(loss='categorical_crossentropy',

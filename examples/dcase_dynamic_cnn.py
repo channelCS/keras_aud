@@ -153,11 +153,11 @@ else:
     cross_validation=False
    
 conv_layers=2
-acts=['relu','relu']
-drops=[0.1,0.1]
-pools=[2,2]
-nb_filter=[10,10]
-filter_length=[3,3]
+acts          = ['relu','relu']
+drops         = [0.1   , 0.1  ]
+pools         = [['max',2],['globmax',None]]
+nb_filter     = [10    , 10   ]
+filter_length = [3     , 3    ]
 end_dense={'input_neurons':200,'activation':'relu','dropout':0.1}
 bn=True
 last='softmax'
@@ -166,7 +166,7 @@ miz=aud_model.Dynamic_Model(input_neurons=False,last=last,end_dense=end_dense,
     nb_filter = nb_filter, filter_length=filter_length,
     epochs=epochs,batchsize=batchsize,num_classes=num_classes,
     model=model,agg_num=agg_num,hop=hop,dimx=dimx,dimy=dimy,
-    conv_layers=conv_layers,acts=acts,drops=drops,pools=pools,bn=bn)
+    layers=conv_layers,acts=acts,drops=drops,pools=pools,bn=bn)
 
 np.random.seed(68)
 if cross_validation:
