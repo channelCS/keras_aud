@@ -128,7 +128,7 @@ class Static_Model:
                 
 class Dynamic_Model:
     def __init__(self,input_neurons,cross_validation,
-        agg_num,hop,dimx,dimy,num_classes,
+        agg_num,hop,dimx,dimy,num_classes,end_dense,last,
         epochs,batchsize,nb_filter,filter_length,
         model,layers,acts,drops,pools,bn):
         if batchsize==None or model==None:
@@ -151,13 +151,15 @@ class Dynamic_Model:
         self.drops=drops
         self.pools=pools
         self.bn=bn
+        self.end_dense=end_dense
+        self.last=last
 
     def prepare_model(self):
         if self.model=='DNN':
-            lrmodel=M.dnn_dynamic(num_classes=self.num_classes,input_neurons=self.input_neurons,input_dim=self.dimx*self.dimy,layers=self.layers,acts=self.acts,drops=self.drops)
+            lrmodel=M.dnn_dynamic(num_classes=self.num_classes,input_neurons=self.input_neurons,input_dim=self.dimx*self.dimy,dense_layers=self.layers,acts=self.acts,drops=self.drops)
             return lrmodel
         elif self.model=='CNN':
-            lrmodel=M.cnn_dynamic(num_classes=self.num_classes,input_neurons=self.input_neurons,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter,filter_length =self.filter_length,layers=self.layers,acts=self.acts,pools=self.pools,drops=self.drops,bn=self.bn)
+            lrmodel=M.cnn_dynamic(end_dense=self.end_dense,last=self.last,num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter,filter_length =self.filter_length,conv_layers=self.layers,acts=self.acts,pools=self.pools,drops=self.drops,bn=self.bn)
             return lrmodel
           
 def get_activations(model, layer, X_batch):

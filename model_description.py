@@ -110,8 +110,8 @@ def cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
     model.compile(loss='categorical_crossentropy',
-			  optimizer='adadelta',
-			  metrics=['accuracy'])
+              optimizer='adadelta',
+              metrics=['accuracy'])
     
     return model
 ########################### BASIC FCRNN #################################
@@ -157,8 +157,8 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
     model.compile(loss='categorical_crossentropy',
-			  optimizer='adam',
-			  metrics=['accuracy'])
+              optimizer='adam',
+              metrics=['accuracy'])
     
     return model
 
@@ -192,34 +192,37 @@ def dnn_dynamic(input_neurons,input_dim,num_classes,layers=0,acts=[],drops=[]):
 
 ########################### DYNAMIC CNN #################################
 
-def cnn_dynamic(input_neurons,dimx,dimy,nb_filter,
-                         filter_length,num_classes,layers=0,pools=[],acts=[],drops=[],bn=False):
-    layers2 = layers-1
-    last    = acts.pop()
-    last2   = acts.pop()
-    dropout = drops.pop()
-    if not np.all([len(pools)==layers2,len(drops)==layers2,len(acts)==layers2]):
+def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
+                         nb_filter=[],filter_length=[],pools=[],acts=[],drops=[],
+                         bn=False,end_dense={},last='softmax'):
+    if not np.all([len(acts)==conv_layers,len(nb_filter)==conv_layers,len(filter_length)==conv_layers]):
         print "Layers Mismatch"
         return False
-    inpx = Input(shape=(1,dimx,dimy),name='inpx')
-    inpx2=inpx
-    for i in range(layers2):
-        x = Conv2D(filters=nb_filter,
-                   kernel_size=filter_length,
+    x = Input(shape=(1,dimx,dimy),name='inpx')
+    inpx = x
+    for i in range(conv_layers):
+        x = Conv2D(filters=nb_filter[i],
+                   kernel_size=filter_length[i],
                    data_format='channels_first',
                    padding='same',
-                   activation=acts[i])(inpx)
+                   activation=acts[i])(x)
         if bn:
             x=BatchNormalization()(x)
-        hx = MaxPooling2D(pool_size=pools[i])(x)
-        inpx=   Dropout(drops[i])(hx)
+        if pools != []:
+            x = MaxPooling2D(pool_size=pools[i])(x)
+        if drops != []:
+            x = Dropout(drops[i])(x)
 
-    h = Flatten()(inpx)
-    wrap = Dense(input_neurons, activation=last2,name='wrap')(h)
-    wrap= Dropout(dropout)(wrap)
-    score = Dense(num_classes,activation=last,name='score')(wrap)
+    flat = Flatten()(x)
+    if end_dense != {}:
+        flat = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(flat)
+        try:
+            flat = Dropout(end_dense['dropout'])(flat)
+        except:
+            pass
+    score = Dense(num_classes,activation=last,name='score')(flat)
     
-    model = Model(inpx2,score)
+    model = Model(inpx,score)
     model.compile(loss='categorical_crossentropy',
               optimizer='adadelta',
               metrics=['accuracy'])
