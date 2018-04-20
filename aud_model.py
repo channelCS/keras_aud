@@ -56,15 +56,13 @@ def calculate_accuracy(truth,pred):
     
 class Functional_Model:
     def __init__(self,input_neurons,cross_validation,dropout1,
-        act1,act2,act3,agg_num,hop,dimx,dimy,num_classes,
-        epochs,batchsize,nb_filter,filter_length,
+        act1,act2,act3,dimx,dimy,num_classes,
+        nb_filter,filter_length,
         model,act4=None,dropout2=None):
-        if batchsize==None or model==None:
-            print "Enter valid batchsize and model name"
+        if model==None:
+            print "Enter valid model name"
             return
         self.cross_validation=cross_validation
-        self.epochs=epochs
-        self.batchsize=batchsize
         self.input_neurons=input_neurons
         self.dropout1=dropout1
         self.act1=act1
@@ -72,8 +70,6 @@ class Functional_Model:
         self.act3=act3
         self.act4=act4
         self.model=model
-        self.agg_num=agg_num
-        self.hop=hop
         self.nb_filter = nb_filter
         self.filter_length =filter_length
         self.dimx = dimx
@@ -102,19 +98,15 @@ class Functional_Model:
           
 class Static_Model:
     def __init__(self,input_neurons,cross_validation,
-        agg_num,hop,dimx,dimy,num_classes,
-        epochs,batchsize,nb_filter,filter_length,
+        dimx,dimy,num_classes,
+        nb_filter,filter_length,
         model):
-        if batchsize==None or model==None:
-            print "Enter valid batchsize and model name"
+        if model==None:
+            print "Enter valid model name"
             return
         self.cross_validation=cross_validation
-        self.epochs=epochs
-        self.batchsize=batchsize
         self.input_neurons=input_neurons
         self.model=model
-        self.agg_num=agg_num
-        self.hop=hop
         self.nb_filter = nb_filter
         self.filter_length =filter_length
         self.dimx = dimx
@@ -127,39 +119,34 @@ class Static_Model:
             return lrmodel
                 
 class Dynamic_Model:
-    def __init__(self,input_neurons,cross_validation,
-        agg_num,hop,dimx,dimy,num_classes,end_dense,last,
-        epochs,batchsize,nb_filter,filter_length,
-        model,layers,acts,drops,pools,bn):
-        if batchsize==None or model==None:
-            print "Enter valid batchsize and model name"
+    def __init__(self,model,num_classes,dimx,dimy,acts,**kwargs):
+        if model==None:
+            print "Enter valid model name"
             return
-        self.cross_validation=cross_validation
-        self.epochs=epochs
-        self.batchsize=batchsize
-        self.input_neurons=input_neurons
         self.model=model
-        self.agg_num=agg_num
-        self.hop=hop
-        self.nb_filter = nb_filter
-        self.filter_length =filter_length
+        self.num_classes=num_classes
         self.dimx = dimx
         self.dimy = dimy
-        self.num_classes=num_classes
-        self.layers=layers
-        self.acts=acts
-        self.drops=drops
-        self.pools=pools
-        self.bn=bn
-        self.end_dense=end_dense
-        self.last=last
-
+        self.acts = acts
+        self.kwargs=kwargs
     def prepare_model(self):
         if self.model=='DNN':
-            lrmodel=M.dnn_dynamic(num_classes=self.num_classes,input_neurons=self.input_neurons,input_dim=self.dimx*self.dimy,dense_layers=self.layers,acts=self.acts,drops=self.drops)
+            lrmodel=M.dnn_dynamic(num_classes=self.num_classes,
+                                  input_dim=self.dimx*self.dimy,acts=self.acts,
+                                  input_neurons=self.input_neurons,
+                                  dense_layers=self.layers,drops=self.drops)
             return lrmodel
         elif self.model=='CNN':
-            lrmodel=M.cnn_dynamic(end_dense=self.end_dense,last=self.last,num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter,filter_length =self.filter_length,conv_layers=self.layers,acts=self.acts,pools=self.pools,drops=self.drops,bn=self.bn)
+            lrmodel=M.cnn_dynamic(num_classes=self.num_classes,dimx = self.dimx,
+                                  dimy = self.dimy,acts=self.acts,
+                                  end_dense=self.kwargs['end_dense'],last=self.kwargs['last'],
+                                  nb_filter = self.kwargs['nb_filter'],
+                                  filter_length =self.kwargs['filter_length'],
+                                  conv_layers=self.kwargs['layers'],pools=self.kwargs['pools'],
+                                  drops=self.kwargs['drops'],bn=self.kwargs['bn'])
+            return lrmodel
+        elif self.model=='CBRNN':
+            lrmodel=M.cbrnn_dynamic(end_dense=self.end_dense,last=self.last,num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter,filter_length =self.filter_length,conv_layers=self.layers,acts=self.acts,pools=self.pools,drops=self.drops,bn=self.bn)
             return lrmodel
           
 def get_activations(model, layer, X_batch):

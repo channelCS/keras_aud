@@ -9,7 +9,7 @@ from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose
 from keras.layers import BatchNormalization, ZeroPadding2D
-from keras.layers import Embedding, LSTM, Reshape, Bidirectional, TimeDistributed, Permute
+from keras.layers import Embedding, LSTM, GRU, Reshape, Bidirectional, TimeDistributed, Permute
 from keras.models import load_model
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras import backend as K
@@ -152,7 +152,7 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
-    w = Bidirectional(LSTM(32))(x)
+    w = Bidirectional(LSTM(32,return_sequences=False))(x)
     wrap= Dropout(dropout)(w)
     main_output = Dense(num_classes, activation='sigmoid', name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
@@ -238,7 +238,57 @@ def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
 
     return model
 
-
+############################# DYNAMIC CBRNN #############################
+def cbrnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
+                  rnn_layers=0,rnn_type='',bd=False,rnn_units=[],ret_seq=True,
+                  nb_filter=[],filter_length=[],pools=[],acts=[],drops=[],
+                  bn=False,end_dense={},last='softmax'):
+    #CNN with biderectional lstm
+    print "CBRNN"
+    if not np.all([len(acts)==conv_layers,len(nb_filter)==conv_layers,len(filter_length)==conv_layers]):
+        print "Layers Mismatch"
+        return False
+    x = Input(shape=(1,dimx,dimy),name='inpx')
+    inpx = x
+    for i in range(conv_layers):
+        x = Conv2D(filters=nb_filter[i],
+                   kernel_size=filter_length[i],
+                   data_format='channels_first',
+                   padding='same',
+                   activation=acts[i])(x)
+        if bn:
+            x=BatchNormalization()(x)
+        if pools != []:
+            if pools[i][0]=='max':
+                x = MaxPooling2D(pool_size=pools[i][1])(x)
+            elif pools[i][0]=='avg':
+                x = AveragePooling2D(pool_size=pools[i][1])(x)
+        if drops != []:
+            x = Dropout(drops[i])(x)
+    print "Yeh",kr(x)
+    x = Permute((2,1,3))(x)
+    a,b,c,d= kr(x)
+    x = Reshape((b*d,c))(x) 
+    for i in range(rnn_layers):
+        #Only last layer can have return_sequences as False
+        r = ret_seq if i == rnn_layers else True
+        if rnn_type=='LSTM':
+            x = LSTM(rnn_units[i],return_sequences=r)(x)
+        elif rnn_type=='GRU':
+            x = Bidirectional(GRU(rnn_units[i],return_sequences=r))(x)
+        elif rnn_type=='bdLSTM':
+            x = Bidirectional(LSTM(rnn_units[i],return_sequences=r))(x)
+        elif rnn_type=='bdGRU':
+            x = Bidirectional(GRU(rnn_units[i],return_sequences=r))(x)
+    x= Dropout(0.1)(x)
+    main_output = Dense(num_classes, activation='sigmoid', name='main_output')(x)
+    model = Model(inputs=inpx, outputs=main_output)
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+    
+    return model
 
 #############################  model.conv_deconv #################################
 
