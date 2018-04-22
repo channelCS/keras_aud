@@ -131,23 +131,44 @@ class Dynamic_Model:
         self.kwargs=kwargs
     def prepare_model(self):
         if self.model=='DNN':
-            lrmodel=M.dnn_dynamic(num_classes=self.num_classes,
-                                  input_dim=self.dimx*self.dimy,acts=self.acts,
-                                  input_neurons=self.input_neurons,
-                                  dense_layers=self.layers,drops=self.drops)
+            lrmodel=M.dnn_dynamic(num_classes   = self.num_classes,
+                                  input_dim     = self.dimx*self.dimy,
+                                  acts          = self.acts,
+                                  input_neurons = self.kwargs['input_neurons'],
+                                  dense_layers  = self.kwargs['layers'],
+                                  drops         = self.kwargs['drops'])
             return lrmodel
         elif self.model=='CNN':
-            lrmodel=M.cnn_dynamic(num_classes=self.num_classes,dimx = self.dimx,
-                                  dimy = self.dimy,acts=self.acts,
-                                  end_dense=self.kwargs['end_dense'],last=self.kwargs['last'],
-                                  nb_filter = self.kwargs['nb_filter'],
-                                  filter_length =self.kwargs['filter_length'],
-                                  conv_layers=self.kwargs['layers'],pools=self.kwargs['pools'],
-                                  drops=self.kwargs['drops'],bn=self.kwargs['bn'])
+            lrmodel=M.cnn_dynamic(num_classes   = self.num_classes,
+                                  dimx          = self.dimx,
+                                  dimy          = self.dimy,
+                                  acts          = self.acts,
+                                  end_dense     = self.kwargs['end_dense'],
+                                  last          = self.kwargs['last'],
+                                  nb_filter     = self.kwargs['nb_filter'],
+                                  filter_length = self.kwargs['filter_length'],
+                                  conv_layers   = self.kwargs['layers'],
+                                  pools         = self.kwargs['pools'],
+                                  drops         = self.kwargs['drops'],
+                                  bn            = self.kwargs['bn'])
             return lrmodel
         elif self.model=='CBRNN':
-            lrmodel=M.cbrnn_dynamic(end_dense=self.end_dense,last=self.last,num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter,filter_length =self.filter_length,conv_layers=self.layers,acts=self.acts,pools=self.pools,drops=self.drops,bn=self.bn)
-            return lrmodel
+            try:
+                lrmodel=M.cbrnn_dynamic(num_classes   = self.num_classes,
+                                        dimx          = self.dimx,
+                                        dimy          = self.dimy,
+                                        acts          = self.acts,
+                                        end_dense     = self.kwargs['end_dense'],
+                                        last          = self.kwargs['last'],
+                                        nb_filter     = self.kwargs['nb_filter'],
+                                        filter_length = self.kwargs['filter_length'],
+                                        conv_layers   = self.kwargs['layers'],
+                                        pools         = self.kwargs['pools'],
+                                        drops         = self.kwargs['drops'],
+                                        bn            = self.kwargs['bn'])
+                return lrmodel
+            except Exception as e:
+                print("Invalid parameter passed",e)
           
 def get_activations(model, layer, X_batch):
     get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)

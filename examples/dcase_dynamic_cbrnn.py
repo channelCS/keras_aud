@@ -163,11 +163,10 @@ end_dense={'input_neurons':200,'activation':'relu','dropout':0.1}
 bn=False
 last='softmax'
 
-miz=aud_model.Dynamic_Model(input_neurons=False,last=last,end_dense=end_dense,
-    cross_validation=cross_validation,
+miz=aud_model.Dynamic_Model(last=last,end_dense=end_dense,
     nb_filter = nb_filter, filter_length=filter_length,
-    epochs=epochs,batchsize=batchsize,num_classes=num_classes,
-    model=model,agg_num=agg_num,hop=hop,dimx=dimx,dimy=dimy,
+    num_classes=num_classes,
+    model=model,dimx=dimx,dimy=dimy,
     layers=conv_layers,acts=acts,drops=drops,pools=pools,bn=bn)
 
 np.random.seed(68)
@@ -195,7 +194,7 @@ if cross_validation:
             print "If you have used Dynamic Model, make sure you pass correct parameters"
             raise SystemExit
         #fit the model
-        lrmodel.fit(train_x,train_y,batch_size=miz.batchsize,epochs=miz.epochs,verbose=1)
+        lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
         
         #make prediction
         pred=lrmodel.predict(test_x, batch_size=32)
