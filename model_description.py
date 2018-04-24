@@ -274,13 +274,13 @@ def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
                 x = AveragePooling2D(pool_size=pools[i][1])(x)
         if drops != []:
             x = Dropout(drops[i])(x)
-    print "Yeh",kr(x)
     x = Permute((2,1,3))(x)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x)
+
     for i in range(rnn_layers):
         #Only last layer can have return_sequences as False
-        r = False if i == rnn_layers else True
+        r = False if i == rnn_layers-1 else True
         if rnn_type=='LSTM':
             x = LSTM(rnn_units[i],return_sequences=r)(x)
         elif rnn_type=='GRU':
@@ -289,7 +289,7 @@ def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
             x = Bidirectional(LSTM(rnn_units[i],return_sequences=r))(x)
         elif rnn_type=='bdGRU':
             x = Bidirectional(GRU(rnn_units[i],return_sequences=r))(x)
-    print "Yeh",kr(x)
+    
     x= Dropout(0.1)(x)
     if end_dense != {}:
         x = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(x)
