@@ -152,22 +152,22 @@ if prep=='dev':
 else:
     cross_validation=False
    
-conv_layers=2
+cnn_layers=2
 acts          = ['relu','relu']
 drops         = [0.1   , 0.1  ]
 pools         = [['max',2],['max',2]]
-#pools         =[]
 nb_filter     = [10    , 10   ]
 filter_length = [3     , 3    ]
+rnn_layers = 2
+rnn_units = [100,100]
 end_dense={'input_neurons':200,'activation':'relu','dropout':0.1}
-bn=False
-last='softmax'
 
-miz=aud_model.Dynamic_Model(last=last,end_dense=end_dense,
-    nb_filter = nb_filter, filter_length=filter_length,
-    num_classes=num_classes,
-    model=model,dimx=dimx,dimy=dimy,
-    layers=conv_layers,acts=acts,drops=drops,pools=pools,bn=bn)
+miz=aud_model.Dynamic_Model(model = model, cnn_layers = cnn_layers,
+                            nb_filter = nb_filter, filter_length = filter_length,
+                            dimx = dimx, dimy = dimy,
+                            acts = acts, drops = drops, pools = pools,
+                            rnn_layers = rnn_layers, rnn_units = rnn_units,
+                            end_dense = end_dense,num_classes = num_classes)
 
 np.random.seed(68)
 if cross_validation:

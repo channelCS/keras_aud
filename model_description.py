@@ -239,18 +239,27 @@ def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
     return model
 
 ############################# DYNAMIC CBRNN #############################
-def cbrnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
-                  rnn_layers=0,rnn_type='',bd=False,rnn_units=[],ret_seq=True,
-                  nb_filter=[],filter_length=[],pools=[],acts=[],drops=[],
-                  bn=False,end_dense={},last='softmax'):
+def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
+    pools     = kwargs['kwargs'].get('pools',[])
+    drops     = kwargs['kwargs'].get('drops',[])
+    bn        = kwargs['kwargs'].get('batch_norm',False)
+    end_dense = kwargs['kwargs'].get('end_dense',{})
+    last_act  = kwargs['kwargs'].get('last_act','softmax')
+    
+    cnn_layers = kwargs['kwargs'].get('cnn_layers',1)
+    rnn_layers = kwargs['kwargs'].get('rnn_layers',1)
+    rnn_type   = kwargs['kwargs'].get('rnn_type','LSTM')
+    rnn_units  = kwargs['kwargs'].get('rnn_units',[])
+    nb_filter     = kwargs['kwargs'].get('nb_filter',[])
+    filter_length = kwargs['kwargs'].get('filter_length',[])
     #CNN with biderectional lstm
     print "CBRNN"
-    if not np.all([len(acts)==conv_layers,len(nb_filter)==conv_layers,len(filter_length)==conv_layers]):
+    if not np.all([len(acts)==cnn_layers,len(nb_filter)==cnn_layers,len(filter_length)==cnn_layers]):
         print "Layers Mismatch"
         return False
     x = Input(shape=(1,dimx,dimy),name='inpx')
     inpx = x
-    for i in range(conv_layers):
+    for i in range(cnn_layers):
         x = Conv2D(filters=nb_filter[i],
                    kernel_size=filter_length[i],
                    data_format='channels_first',
@@ -268,10 +277,10 @@ def cbrnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
     print "Yeh",kr(x)
     x = Permute((2,1,3))(x)
     a,b,c,d= kr(x)
-    x = Reshape((b*d,c))(x) 
+    x = Reshape((b*d,c))(x)
     for i in range(rnn_layers):
         #Only last layer can have return_sequences as False
-        r = ret_seq if i == rnn_layers else True
+        r = False if i == rnn_layers else True
         if rnn_type=='LSTM':
             x = LSTM(rnn_units[i],return_sequences=r)(x)
         elif rnn_type=='GRU':
@@ -280,8 +289,15 @@ def cbrnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
             x = Bidirectional(LSTM(rnn_units[i],return_sequences=r))(x)
         elif rnn_type=='bdGRU':
             x = Bidirectional(GRU(rnn_units[i],return_sequences=r))(x)
+    print "Yeh",kr(x)
     x= Dropout(0.1)(x)
-    main_output = Dense(num_classes, activation='sigmoid', name='main_output')(x)
+    if end_dense != {}:
+        x = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(x)
+        try:
+            x = Dropout(end_dense['dropout'])(x)
+        except:
+            pass
+    main_output = Dense(num_classes, activation=last_act, name='main_output')(x)
     model = Model(inputs=inpx, outputs=main_output)
     model.summary()
     model.compile(loss='categorical_crossentropy',

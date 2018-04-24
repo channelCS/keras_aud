@@ -130,6 +130,8 @@ class Dynamic_Model:
         self.acts = acts
         self.kwargs=kwargs
     def prepare_model(self):
+        for i in self.kwargs:
+            print i
         if self.model=='DNN':
             lrmodel=M.dnn_dynamic(num_classes   = self.num_classes,
                                   input_dim     = self.dimx*self.dimy,
@@ -158,17 +160,10 @@ class Dynamic_Model:
                                         dimx          = self.dimx,
                                         dimy          = self.dimy,
                                         acts          = self.acts,
-                                        end_dense     = self.kwargs['end_dense'],
-                                        last          = self.kwargs['last'],
-                                        nb_filter     = self.kwargs['nb_filter'],
-                                        filter_length = self.kwargs['filter_length'],
-                                        conv_layers   = self.kwargs['layers'],
-                                        pools         = self.kwargs['pools'],
-                                        drops         = self.kwargs['drops'],
-                                        bn            = self.kwargs['bn'])
+                                        kwargs = self.kwargs)
                 return lrmodel
             except Exception as e:
-                print("Invalid parameter passed",e)
+                print(e)
           
 def get_activations(model, layer, X_batch):
     get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)
