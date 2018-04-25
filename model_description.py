@@ -166,25 +166,33 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
 ########################################### DYNAMIC MODELS ###########################################
 
 ########################### DYNAMIC DNN #################################
-def dnn_dynamic(input_neurons,input_dim,num_classes,layers=0,acts=[],drops=[]):
-    layers2 = layers-1
-    last    = acts.pop()
-    last2   = acts.pop()
-    dropout = drops.pop()
-    if not np.all([len(drops)==layers2,len(acts)==layers2]):
+def dnn_dynamic(num_classes,input_dim,acts,**kwargs):
+    input_neurons = kwargs['kwargs'].get('input_neurons',200)
+    drops         = kwargs['kwargs'].get('drops',[])
+    dnn_layers    = kwargs['kwargs'].get('dnn_layers',1)
+    last_act      = kwargs['kwargs'].get('last_act','softmax')
+    end_dense = kwargs['kwargs'].get('end_dense',{})
+
+    
+    if not np.all([len(acts)==dnn_layers]):
         print "Layers Mismatch"
         return False
-    inpx = Input(shape=(input_dim,),name='inpx')
-    inpx2=inpx
-    for i in range(layers2):
+    x = Input(shape=(input_dim,),name='inpx')
+    inpx = x
+    for i in range(dnn_layers):
         x = Dense(input_neurons,activation=acts[i])(inpx)
-        inpx=   Dropout(drops[i])(x)
+        if drops != []:
+            x = Dropout(drops[i])(x)
 
-    wrap = Dense(input_neurons, activation=last2,name='wrap')(inpx)
-    wrap= Dropout(dropout)(wrap)
-    score = Dense(num_classes,activation=last,name='score')(wrap)
+    if end_dense != {}:
+        x = Dense(end_dense['input_neurons'], activation=end_dense['activation'],name='wrap')(x)
+        try:
+            x = Dropout(end_dense['dropout'])(x)
+        except:
+            pass
+    score = Dense(num_classes,activation=last_act,name='score')(x)
     
-    model = Model(inpx2,score)
+    model = Model(inpx,score)
     model.compile(loss='categorical_crossentropy',
               optimizer='adadelta',
               metrics=['accuracy'])
@@ -193,15 +201,23 @@ def dnn_dynamic(input_neurons,input_dim,num_classes,layers=0,acts=[],drops=[]):
 
 ########################### DYNAMIC CNN #################################
 
-def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
-                         nb_filter=[],filter_length=[],pools=[],acts=[],drops=[],
-                         bn=False,end_dense={},last='softmax'):
-    if not np.all([len(acts)==conv_layers,len(nb_filter)==conv_layers,len(filter_length)==conv_layers]):
+def cnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
+    cnn_layers = kwargs['kwargs'].get('cnn_layers',1)
+    nb_filter     = kwargs['kwargs'].get('nb_filter',[])
+    filter_length = kwargs['kwargs'].get('filter_length',[])
+
+    pools     = kwargs['kwargs'].get('pools',[])
+    drops     = kwargs['kwargs'].get('drops',[])
+    bn        = kwargs['kwargs'].get('batch_norm',False)
+    end_dense = kwargs['kwargs'].get('end_dense',{})
+    last_act  = kwargs['kwargs'].get('last_act','softmax')
+
+    if not np.all([len(acts)==cnn_layers,len(nb_filter)==cnn_layers,len(filter_length)==cnn_layers]):
         print "Layers Mismatch"
         return False
     x = Input(shape=(1,dimx,dimy),name='inpx')
     inpx = x
-    for i in range(conv_layers):
+    for i in range(cnn_layers):
         x = Conv2D(filters=nb_filter[i],
                    kernel_size=filter_length[i],
                    data_format='channels_first',
@@ -229,7 +245,7 @@ def cnn_dynamic(dimx,dimy,num_classes,conv_layers=0,
             x = Dropout(end_dense['dropout'])(x)
         except:
             pass
-    score = Dense(num_classes,activation=last,name='score')(x)
+    score = Dense(num_classes,activation=last_act,name='score')(x)
     
     model = Model(inpx,score)
     model.compile(loss='categorical_crossentropy',
