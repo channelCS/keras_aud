@@ -72,3 +72,25 @@ def mat_3d_to_nd(model, X):
         X = X.reshape((batch_num,1,dimx*dimy))
 
     return X
+
+def equalise(tr_X):
+    l=-1
+    chan=[]
+    for i in tr_X:
+        if len(i)>l:
+            l=len(i)
+    for i in range(len(tr_X)):
+        print tr_X[i].shape
+        if len(tr_X[i])!=l:
+            chan.append(i)
+    for k in chan:
+        a,b,d=tr_X[k].shape
+        newx=np.zeros([l,b,d])
+        j=0
+        for i in range(len(tr_X[k])):
+            newx[j]=tr_X[k][i]
+            newx[j+1]=tr_X[k][i]
+            j+=2
+        tr_X[k]=newx
+        
+    return tr_X

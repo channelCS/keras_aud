@@ -161,6 +161,7 @@ for i in range(len(feature)):
     dimy[i]=tr_X[i].shape[-1]
     aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
 
+tr_X=aud_utils.equalise(tr_X)
 tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
 print(tr_X.shape)
 dimx=tr_X[0].shape[-2]
