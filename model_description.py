@@ -7,7 +7,7 @@ Email - akshitadvlp@gmail.com
 
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import Conv2D, Conv2DTranspose
+from keras.layers import Conv2D, Conv2DTranspose, Merge
 from keras.layers import BatchNormalization, ZeroPadding2D
 from keras.layers import Embedding, LSTM, GRU, Reshape, Bidirectional, TimeDistributed, Permute
 from keras.models import load_model
@@ -404,4 +404,44 @@ def conv_deconv(input_neurons,dimx,dimy,dropout,nb_filter,
               optimizer='adadelta',
               metrics=['accuracy'])
 
+    return model
+
+def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+    # Combine different features and model according to their theoritical properties.
+    # For basic, we have combined mel+ cnn & cqt +cnn in parallel
+    # mini Ensemble model
+    inpx0 = Input(shape=(1,dimx,dimy[0]))
+    x0 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx0)
+    x0 = MaxPooling2D(pool_size=pool_size)(x0)
+    x0= Dropout(dropout)(x0)
+    h0 = Flatten()(x0)
+
+    inpx1 = Input(shape=(1,dimx,dimy[1]))
+    x1 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx1)
+    x1 = MaxPooling2D(pool_size=pool_size)(x1)
+    x1= Dropout(dropout)(x1)
+    h1 = Flatten()(x1)
+        
+    
+    combine = Merge(mode='concat')([h0,h1]) 
+    # And finally we add the main logistic regression layer    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    main_output = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model(inputs=[inpx0,inpx1],outputs=main_output)
+    ################################################
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adadelta',
+			  metrics=['accuracy'])
+    
+    
     return model

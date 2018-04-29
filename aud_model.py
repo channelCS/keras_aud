@@ -67,6 +67,9 @@ class Functional_Model:
         elif self.model=='CBRNN':
             lrmodel=M.cbrnn(num_classes=self.num_classes,dropout=self.dropout1,input_neurons=self.input_neurons,act1=self.act1,act2=self.act2,act3=self.act3,nb_filter = self.nb_filter,filter_length =self.filter_length,dimx = self.dimx,dimy = self.dimy)
             return lrmodel
+        elif self.model=='MultiCNN':
+            lrmodel=M.multi_cnn(num_classes=self.num_classes,dropout=self.dropout1,input_neurons=self.input_neurons,act1=self.act1,act2=self.act2,act3=self.act3,nb_filter = self.nb_filter,filter_length =self.filter_length,dimx = self.dimx,dimy = self.dimy)
+            return lrmodel
           
 class Static_Model:
     def __init__(self,input_neurons,cross_validation,

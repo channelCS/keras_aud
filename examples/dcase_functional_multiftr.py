@@ -65,7 +65,6 @@ hop=10                 # Hop Length(Integer)
 #    aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
 #    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'example.yaml')
 
-bre
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
@@ -162,8 +161,10 @@ for i in range(len(feature)):
     aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
 
 tr_X=aud_utils.equalise(tr_X)
-tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
-print(tr_X.shape)
+
+for i in range(len(feature)):
+    tr_X[i]=aud_utils.mat_3d_to_nd(model,tr_X[i])
+    print(tr_X[i].shape)
 dimx=tr_X[0].shape[-2]
 
 if prep=='dev':
