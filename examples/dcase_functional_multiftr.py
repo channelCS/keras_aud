@@ -64,8 +64,6 @@ hop=10                 # Hop Length(Integer)
 #for ftr in feature:
 #    aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
 #    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'example.yaml')
-ftr='mel'
-aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml',print_arr=['shape'])
 
 bre
 
@@ -151,16 +149,17 @@ def test(md,csv_file,new_p,model):
     truth.sort()
     return truth,pred
 
-tr_X=list(np.zeros(len(feature),dtype='int'))
+tr_X = list(np.zeros(len(feature),dtype='int'))
+dimy = list(np.zeros(len(feature),dtype='int'))
 for i in range(len(feature)):
     tr_X[i], tr_y = GetAllData( dev_fd+'/'+feature[i], label_csv, agg_num, hop )
     print(tr_X[i].shape)
 
 print(tr_y.shape)    
 
-dimy=[]
-for i in len(feature):
+for i in range(len(feature)):
     dimy[i]=tr_X[i].shape[-1]
+    aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
 
 tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
 print(tr_X.shape)

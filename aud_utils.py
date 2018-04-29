@@ -7,6 +7,7 @@ Email - adityadvlp@gmail.com
 """
 from keras import backend as K
 import numpy as np
+import modules as M
 
 def check_dimension(feature,dimy,yaml_file):
     """
@@ -22,10 +23,14 @@ def check_dimension(feature,dimy,yaml_file):
         find='n_mels'
     elif feature in ['cqt','spectralcentroid']:
         find='n_mels'
-    
+    if feature in M.get_list():
+        yaml_load=M.read_yaml(yaml_file)
+    n1 = yaml_load[feature][find][0]
     if n1 != dimy:
         print "Dimension Mismatch. Expected {} Found {}".format(n1,dimy)
         raise SystemExit
+    else:
+        print "Correct dimension"
 
 def calculate_accuracy(truth,pred):        
 	pos,neg=0,0 
