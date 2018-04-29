@@ -2,7 +2,7 @@ mel:
     fs:
     - 44100.  
     n_mels:
-    - 40
+    - 64
     fmin:
     - 0.
     fmax:

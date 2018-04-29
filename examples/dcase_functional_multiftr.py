@@ -26,14 +26,11 @@ from keras.models import load_model
 
 wav_dev_fd   = ka_path+'/dcase_data/audio/dev'
 wav_eva_fd   = ka_path+'/dcase_data/audio/eva'
-dev_fd       = ka_path+'/dcase_data/features/dev/logmel'
-eva_fd       = ka_path+'/dcase_data/features/eva/logmel'
+dev_fd       = ka_path+'/dcase_data/features/dev'
+eva_fd       = ka_path+'/dcase_data/features/eva'
 label_csv    = ka_path+'/dcase_data/texts/dev/meta.txt'
 txt_eva_path = ka_path+'/dcase_data/texts/eva/test.txt'
 new_p        = ka_path+'/dcase_data/texts/eva/evaluate.txt'
-
-#aud_audio.extract('logmel', wav_dev_fd, dev_fd,'example.yaml')
-#aud_audio.extract('logmel', wav_eva_fd, eva_fd,'example.yaml')
 
 labels = [ 'bus', 'cafe/restaurant', 'car', 'city_center', 'forest_path', 'grocery_store', 'home', 'beach', 
             'library', 'metro_station', 'office', 'residential_area', 'train', 'tram', 'park' ]
@@ -42,12 +39,12 @@ id_to_lb = { id:lb for id, lb in enumerate(labels) }
 
 
 
-prep='eval'               # Which mode to use
+prep='dev'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
 model='CNN'               # Name of model
-feature="logmel"          # Name of feature
+feature=["logmel","mel"]  # Name of feature
 
 dropout1=0.1             # 1st Dropout
 act1='relu'              # 1st Activation
@@ -64,8 +61,13 @@ nb_filter=100          # Number of Filters
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
 
-paul=aud_model.Feature(feature=feature)
+#for ftr in feature:
+#    aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
+#    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'example.yaml')
+ftr='mel'
+aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml',print_arr=['shape'])
 
+bre
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
@@ -149,17 +151,20 @@ def test(md,csv_file,new_p,model):
     truth.sort()
     return truth,pred
 
+tr_X=list(np.zeros(len(feature),dtype='int'))
+for i in range(len(feature)):
+    tr_X[i], tr_y = GetAllData( dev_fd+'/'+feature[i], label_csv, agg_num, hop )
+    print(tr_X[i].shape)
 
-
-tr_X, tr_y = GetAllData( dev_fd, label_csv, agg_num, hop )
-
-print(tr_X.shape)
 print(tr_y.shape)    
-    
+
+dimy=[]
+for i in len(feature):
+    dimy[i]=tr_X[i].shape[-1]
+
 tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
 print(tr_X.shape)
-dimx=tr_X.shape[-2]
-dimy=tr_X.shape[-1]
+dimx=tr_X[0].shape[-2]
 
 if prep=='dev':
     cross_validation=True
