@@ -43,7 +43,7 @@ prep='dev'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='Multi_CNN'               # Name of model
+model='MultiCNN'               # Name of model
 feature=["logmel","mel"]  # Name of feature
 
 dropout1=0.1             # 1st Dropout
@@ -160,7 +160,7 @@ for i in range(len(feature)):
     dimy[i]=tr_X[i].shape[-1]
     aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
 
-tr_X=aud_utils.equalise(tr_X)
+#tr_X=aud_utils.equalise(tr_X)
 
 for i in range(len(feature)):
     tr_X[i]=aud_utils.mat_3d_to_nd(model,tr_X[i])
@@ -182,20 +182,19 @@ if cross_validation:
     kf = KFold(len(tr_X[0]),folds,shuffle=True,random_state=42)
     results=[]    
     for train_indices, test_indices in kf:
-        train_x0 = [tr_X[0][ii] for ii in train_indices]
-        train_x1 = [tr_X[1][ii] for ii in train_indices]
+        train_x = list(np.zeros(len(feature),dtype='int'))
+        test_x  = list(np.zeros(len(feature),dtype='int'))
+        for i in range(len(feature)):
+            train_x[i] = [tr_X[i][ii] for ii in train_indices]
+            test_x[i]  = [tr_X[i][ii] for ii in test_indices]
+            train_x[i] = np.array(train_x[i])
+            test_x[i]  = np.array(test_x[i])
         train_y = [tr_y[ii] for ii in train_indices]
-        test_x0  = [tr_X[0][ii] for ii in test_indices]
-        test_x1  = [tr_X[1][ii] for ii in test_indices]
         test_y  = [tr_y[ii] for ii in test_indices]
         train_y = to_categorical(train_y,num_classes=len(labels))
         test_y = to_categorical(test_y,num_classes=len(labels)) 
         
-        train_x0=np.array(train_x0)
-        train_x1=np.array(train_x1)
         train_y=np.array(train_y)
-        test_x0=np.array(test_x0)
-        test_x1=np.array(test_x1)
         test_y=np.array(test_y)
         print "Development Mode"
 
@@ -206,10 +205,10 @@ if cross_validation:
             print "If you have used Dynamic Model, make sure you pass correct parameters"
             raise SystemExit
         #fit the model
-        lrmodel.fit([train_x0,train_x1],train_y,batch_size=batchsize,epochs=epochs,verbose=1)
+        lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
         
         #make prediction
-        pred=lrmodel.predict([test_x0,test_x1], batch_size=32)
+        pred=lrmodel.predict(test_x, batch_size=32)
 
         pred = [ii.argmax()for ii in pred]
         test_y = [ii.argmax()for ii in test_y]
