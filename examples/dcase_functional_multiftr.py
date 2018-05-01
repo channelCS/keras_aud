@@ -49,7 +49,7 @@ feature=["logmel","mel"]  # Name of feature
 
 dropout1=0.1             # 1st Dropout
 act1='relu'              # 1st Activation
-act2='sigmoid'              # 2nd Activation
+act2='relu'              # 2nd Activation
 act3='softmax'           # 3rd Activation
 
 input_neurons=400      # Number of Neurons

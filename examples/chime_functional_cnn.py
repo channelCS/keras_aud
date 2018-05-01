@@ -37,7 +37,7 @@ labels = [ 'c', 'm', 'f', 'v', 'p', 'b', 'o', 'S' ]
 lb_to_id = { lb:id for id, lb in enumerate(labels) }
 id_to_lb = { id:lb for id, lb in enumerate(labels) }
 
-prep='dev'               # Which mode to use
+prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
@@ -47,7 +47,7 @@ feature="logmel"          # Name of feature
 dropout1=0.1             # 1st Dropout
 act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
-act3='softmax'           # 3rd Activation
+act3='sigmoid'           # 3rd Activation
 
 input_neurons=400      # Number of Neurons
 epochs=4              # Number of Epochs
@@ -111,46 +111,41 @@ def GetAllData(fe_fd, csv_file, agg_num, hop):
 
 
 
-def test(md,csv_file,new_p,model):
+def test(md,csv_file,model):
     # load name of wavs to be classified
     with open( csv_file, 'rb') as f:
         reader = csv.reader(f)
         lis = list(reader)
     
     # do classification for each file
-    names = []
-    pred_lbs = []
+    y_pred = []
+    te_y = []
     
     for li in lis:
-        names.append( li[0] )
-        na = li[0][6:-4]
+        na = li[1]
         #audio evaluation name
-        fe_path = eva_fd + '/' + na + '.f'
+        fe_path = eva_fd + '/'+feature+'/' + na + '.f'
+        info_path = label_csv + '/' + na + '.csv'
+        with open( info_path, 'rb') as g:
+            reader2 = csv.reader(g)
+            lis2 = list(reader2)
+        tags = lis2[-2][1]
+
+        y = np.zeros( num_classes )
+        for ch in tags:
+            y[ lb_to_id[ch] ] = 1
+        te_y.append(y)
         X0 = cPickle.load( open( fe_path, 'rb' ) )
         X0 = aud_utils.mat_2d_to_3d( X0, agg_num, hop )
         
         X0 = aud_utils.mat_3d_to_nd(model,X0)
     
         # predict
-        p_y_preds = md.predict(X0)        # probability, size: (n_block,label)
-        preds = np.argmax( p_y_preds, axis=-1 )     # size: (n_block)
-        b = scipy.stats.mode(preds)
-        pred = int( b[0] )
-        pred_lbs.append( id_to_lb[ pred ] )
+        p_y_pred = md.predict( X0 )
+        p_y_pred = np.mean( p_y_pred, axis=0 )     # shape:(n_label)
+        y_pred.append(p_y_pred)
     
-    pred = []    
-    # write out result
-    for i1 in xrange( len( names ) ):
-        fname = names[i1] + '\t' + pred_lbs[i1] + '\n' 
-        pred.append(fname)
-        
-    print 'write out finished!'
-    truth = open(new_p,'r').readlines()
-    pred = [i.split('\t')[1].split('\n')[0]for i in pred]
-    truth = [i.split('\t')[1]for i in truth]
-    pred.sort()
-    truth.sort()
-    return truth,pred
+    return np.array(te_y), np.array(y_pred)
 
 
 
@@ -217,12 +212,12 @@ else:
     train_y=np.array(tr_y)
     print "Evaluation mode"
     lrmodel=miz.prepare_model()
-    train_y = to_categorical(train_y,num_classes=len(labels))
+    #train_y = to_categorical(train_y,num_classes=len(labels))
         
     #fit the model
     lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
     
-    truth,pred=test(lrmodel,txt_eva_path,new_p,model)
+    truth,pred=test(lrmodel,meta_test_csv,model)
 
-    acc=aud_utils.calculate_accuracy(truth,pred)
-    print "Accuracy %.2f prcnt"%acc
+    eer=aud_utils.calculate_eer(truth,pred)
+    print "EER %.2f prcnt"%eer

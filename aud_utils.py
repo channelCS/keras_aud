@@ -44,7 +44,7 @@ def calculate_accuracy(truth,pred):
     return acc
 
 def calculate_eer(te_y,y_pred):
-    x = te_y.shape[-1] #num classes
+    x = len(te_y[0]) #num classes
     eps = 1E-6
     class_eer=[]
     for k in xrange(x):
