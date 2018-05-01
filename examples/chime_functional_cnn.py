@@ -37,8 +37,8 @@ labels = [ 'c', 'm', 'f', 'v', 'p', 'b', 'o', 'S' ]
 lb_to_id = { lb:id for id, lb in enumerate(labels) }
 id_to_lb = { id:lb for id, lb in enumerate(labels) }
 
-prep='eval'               # Which mode to use
-folds=4                   # Number of folds
+prep='dev'               # Which mode to use
+folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
 model='CNN'               # Name of model
@@ -50,9 +50,9 @@ act2='sigmoid'              # 2nd Activation
 act3='softmax'           # 3rd Activation
 
 input_neurons=400      # Number of Neurons
-epochs=10              # Number of Epochs
+epochs=4              # Number of Epochs
 batchsize=128          # Batch Size
-num_classes=15         # Number of classes
+num_classes=len(labels) # Number of classes
 filter_length=3        # Size of Filter
 nb_filter=100          # Number of Filters
 #Parameters that are passed to the features.
@@ -79,9 +79,17 @@ def GetAllData(fe_fd, csv_file, agg_num, hop):
     i=0
     for li in lis:
         # load data
-        [na, lb] = li[0].split('\t')
-        na = na.split('/')[1][0:-4]
+        na = li[1]
         path = fe_fd + '/' + na + '.f'
+        info_path = label_csv + '/' + na + '.csv'
+        with open( info_path, 'rb') as g:
+            reader2 = csv.reader(g)
+            lis2 = list(reader2)
+        tags = lis2[-2][1]
+
+        y = np.zeros( len(labels) )
+        for ch in tags:
+            y[ lb_to_id[ch] ] = 1
         try:
             X = cPickle.load( open( path, 'rb' ) )
         except Exception as e:
@@ -91,7 +99,7 @@ def GetAllData(fe_fd, csv_file, agg_num, hop):
         i+=1
         X3d = aud_utils.mat_2d_to_3d( X, agg_num, hop )
         X3d_all.append( X3d )
-        y_all += [ lb_to_id[lb] ] * len( X3d )
+        y_all += [ y ] * len( X3d )
     
     print "Features loaded",i                
     print 'All files loaded successfully'
@@ -146,7 +154,7 @@ def test(md,csv_file,new_p,model):
 
 
 
-tr_X, tr_y = GetAllData( dev_fd, label_csv, agg_num, hop )
+tr_X, tr_y = GetAllData( dev_fd+'/'+feature, meta_train_csv, agg_num, hop )
 
 print(tr_X.shape)
 print(tr_y.shape)    
@@ -175,8 +183,8 @@ if cross_validation:
         train_y = [tr_y[ii] for ii in train_indices]
         test_x  = [tr_X[ii] for ii in test_indices]
         test_y  = [tr_y[ii] for ii in test_indices]
-        train_y = to_categorical(train_y,num_classes=len(labels))
-        test_y = to_categorical(test_y,num_classes=len(labels)) 
+        #train_y = to_categorical(train_y,num_classes=len(labels))
+        #test_y = to_categorical(test_y,num_classes=len(labels)) 
         
         train_x=np.array(train_x)
         train_y=np.array(train_y)
