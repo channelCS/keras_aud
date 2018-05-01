@@ -76,10 +76,7 @@ def mat_3d_to_nd(model, X):
 def equalise(tr_X):
     chan=[]
     l=len(max(tr_X[:]))
-    for i in range(len(tr_X)):
-        print tr_X[i].shape
-        if len(tr_X[i])!=l:
-            chan.append(i)
+    chan=[i for i in range(len(tr_X)) if len(tr_X[i])!=l]
     for k in chan:
         a,b,d=tr_X[k].shape
         newx=np.zeros([l,b,d])
