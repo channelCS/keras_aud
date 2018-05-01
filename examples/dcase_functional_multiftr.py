@@ -4,12 +4,13 @@ Created on Tue Apr 17 03:37:44 2018
 
 @author: adityac8
 """
-
+#Gives 88.4 on Development 4 folds 10 epochs
+#Gives 78.7 on Evaluation 10 epochs batch_size=64
 import warnings
 warnings.simplefilter("ignore")
 
 import sys
-ka_path="C:/Users/aditya/version-control"
+ka_path="D:/workspace/aditya_akshita/temp"
 sys.path.insert(0, ka_path)
 from keras_aud import aud_audio, aud_feature
 from keras_aud import aud_model, aud_utils
@@ -39,7 +40,7 @@ id_to_lb = { id:lb for id, lb in enumerate(labels) }
 
 
 
-prep='dev'               # Which mode to use
+prep='eval'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
@@ -62,8 +63,8 @@ agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
 
 #for ftr in feature:
-#    aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
-#    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'example.yaml')
+    #aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
+    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'defaults.yaml')
 
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
@@ -121,14 +122,17 @@ def test(md,csv_file,new_p,model):
         names.append( li[0] )
         na = li[0][6:-4]
         #audio evaluation name
-        fe_path = eva_fd + '/' + na + '.f'
-        X0 = cPickle.load( open( fe_path, 'rb' ) )
-        X0 = aud_utils.mat_2d_to_3d( X0, agg_num, hop )
+        test_x=[]
+        for ftr in feature:
+            fe_path = eva_fd + '/' +ftr + '/' + na + '.f'
+            X0 = cPickle.load( open( fe_path, 'rb' ) )
+            X0 = aud_utils.mat_2d_to_3d( X0, agg_num, hop )
         
-        X0 = aud_utils.mat_3d_to_nd(model,X0)
+            X0 = aud_utils.mat_3d_to_nd(model,X0)
+            test_x.append(X0)
     
         # predict
-        p_y_preds = md.predict(X0)        # probability, size: (n_block,label)
+        p_y_preds = md.predict(test_x)        # probability, size: (n_block,label)
         preds = np.argmax( p_y_preds, axis=-1 )     # size: (n_block)
         b = scipy.stats.mode(preds)
         pred = int( b[0] )
@@ -158,7 +162,7 @@ print(tr_y.shape)
 
 for i in range(len(feature)):
     dimy[i]=tr_X[i].shape[-1]
-    aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
+    #aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
 
 #tr_X=aud_utils.equalise(tr_X)
 
@@ -219,14 +223,14 @@ if cross_validation:
         print "Unique in test_y",jj
     print "Results: " + str( np.array(results).mean() )
 else:
-    train_x=np.array(tr_X)
+    train_x=tr_X
     train_y=np.array(tr_y)
     print "Evaluation mode"
     lrmodel=miz.prepare_model()
     train_y = to_categorical(train_y,num_classes=len(labels))
         
     #fit the model
-    lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
+    lrmodel.fit(train_x,train_y,batch_size=64,epochs=epochs,verbose=1)
     
     truth,pred=test(lrmodel,txt_eva_path,new_p,model)
 
