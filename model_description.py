@@ -406,7 +406,7 @@ def conv_deconv(input_neurons,dimx,dimy,dropout,nb_filter,
 
     return model
 
-def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+def multi_cnn2(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # Combine different features and model according to their theoritical properties.
     # For basic, we have combined mel+ cnn & cqt +cnn in parallel
     # mini Ensemble model
@@ -437,6 +437,41 @@ def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,a
     main_output = Dense(num_classes,activation=act3,name='score')(wrap)
     
     model = Model(inputs=[inpx0,inpx1],outputs=main_output)
+    ################################################
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adadelta',
+			  metrics=['accuracy'])
+    
+    
+    return model
+
+def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+    # Combine different features and model according to their theoritical properties.
+    # For basic, we have combined mel+ cnn & cqt +cnn in parallel
+    # mini Ensemble model
+    inps,outs=[],[]
+    for i in range(len(dimy)):
+        inpx = Input(shape=(1,dimx,dimy[i]))
+        inps.append(inpx)
+        x = Conv2D(filters=nb_filter,
+                   kernel_size=filter_length,
+                   data_format='channels_first',
+                   padding='same',
+                   activation=act1)(inpx)
+        x = MaxPooling2D(pool_size=pool_size)(x)
+        x= Dropout(dropout)(x)
+        h = Flatten()(x)
+        outs.append(h)
+
+        
+    
+    combine = Merge(mode='concat')(outs) 
+    # And finally we add the main logistic regression layer    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    main_output = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model(inputs=inps,outputs=main_output)
     ################################################
     model.summary()
     model.compile(loss='categorical_crossentropy',

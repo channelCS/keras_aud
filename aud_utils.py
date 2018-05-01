@@ -66,7 +66,7 @@ def mat_3d_to_nd(model, X):
     [batch_num, dimx, dimy]= X.shape 
     if model=='DNN':
         X = X.reshape(batch_num, dimx*dimy)    
-    elif model == 'CNN' or model=='CHOU' or model=='CRNN' or model=='FCRNN'or model=='CBRNN':
+    elif model == 'CNN' or model=='CHOU' or model=='CRNN' or model=='FCRNN'or model=='CBRNN' or model =='MultiCNN':
         X = X.reshape((batch_num,1,dimx,dimy))
     elif model=='RNN':
         X = X.reshape((batch_num,1,dimx*dimy))
