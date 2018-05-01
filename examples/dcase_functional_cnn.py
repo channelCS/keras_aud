@@ -9,7 +9,7 @@ import warnings
 warnings.simplefilter("ignore")
 
 import sys
-ka_path="C:/Users/aditya/version-control"
+ka_path="D:/workspace/aditya_akshita/temp"
 sys.path.insert(0, ka_path)
 from keras_aud import aud_audio, aud_feature
 from keras_aud import aud_model, aud_utils
@@ -63,9 +63,6 @@ nb_filter=100          # Number of Filters
 #Parameters that are passed to the features.
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
-
-paul=aud_model.Feature(feature=feature)
-
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """

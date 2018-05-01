@@ -4,13 +4,12 @@ Created on Tue Apr 17 03:37:44 2018
 
 @author: adityac8
 """
-#Gives 88.4 on Development 4 folds 10 epochs
-#Gives 78.7 on Evaluation 10 epochs batch_size=64
+
 import warnings
 warnings.simplefilter("ignore")
 
 import sys
-ka_path="D:/workspace/aditya_akshita/temp"
+ka_path="../.."
 sys.path.insert(0, ka_path)
 from keras_aud import aud_audio, aud_feature
 from keras_aud import aud_model, aud_utils
@@ -25,27 +24,25 @@ from sklearn.cross_validation import KFold
 from keras.utils import to_categorical
 from keras.models import load_model
 
-wav_dev_fd   = ka_path+'/dcase_data/audio/dev'
-wav_eva_fd   = ka_path+'/dcase_data/audio/eva'
-dev_fd       = ka_path+'/dcase_data/features/dev'
-eva_fd       = ka_path+'/dcase_data/features/eva'
-label_csv    = ka_path+'/dcase_data/texts/dev/meta.txt'
-txt_eva_path = ka_path+'/dcase_data/texts/eva/test.txt'
-new_p        = ka_path+'/dcase_data/texts/eva/evaluate.txt'
+wav_dev_fd   = ka_path+'/chime_data/audio/dev'
+wav_eva_fd   = ka_path+'/chime_data/audio/eva'
+dev_fd       = ka_path+'/chime_data/features/dev'
+eva_fd       = ka_path+'/chime_data/features/eva'
+meta_train_csv  = ka_path+'/chime_data/texts/meta_csvs/development_chunks_refined.csv'
+meta_test_csv   = ka_path+'/chime_data/texts/meta_csvs/evaluation_chunks_refined.csv' #eva_csv_path
+label_csv       = ka_path+'/chime_data/texts/label_csvs'
 
-labels = [ 'bus', 'cafe/restaurant', 'car', 'city_center', 'forest_path', 'grocery_store', 'home', 'beach', 
-            'library', 'metro_station', 'office', 'residential_area', 'train', 'tram', 'park' ]
+labels = [ 'c', 'm', 'f', 'v', 'p', 'b', 'o', 'S' ]
+
 lb_to_id = { lb:id for id, lb in enumerate(labels) }
 id_to_lb = { id:lb for id, lb in enumerate(labels) }
-
-
 
 prep='eval'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='MultiCNN'               # Name of model
-feature=["logmel","mel"]  # Name of feature
+model='CNN'               # Name of model
+feature="logmel"          # Name of feature
 
 dropout1=0.1             # 1st Dropout
 act1='relu'              # 1st Activation
@@ -62,10 +59,8 @@ nb_filter=100          # Number of Filters
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
 
-#for ftr in feature:
-    #aud_audio.extract(ftr, wav_dev_fd, dev_fd+'/'+ftr,'defaults.yaml')
-    #aud_audio.extract(ftr, wav_eva_fd, eva_fd+'/'+ftr,'defaults.yaml')
-
+#aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml')
+#aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml')
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
@@ -122,17 +117,14 @@ def test(md,csv_file,new_p,model):
         names.append( li[0] )
         na = li[0][6:-4]
         #audio evaluation name
-        test_x=[]
-        for ftr in feature:
-            fe_path = eva_fd + '/' +ftr + '/' + na + '.f'
-            X0 = cPickle.load( open( fe_path, 'rb' ) )
-            X0 = aud_utils.mat_2d_to_3d( X0, agg_num, hop )
+        fe_path = eva_fd + '/' + na + '.f'
+        X0 = cPickle.load( open( fe_path, 'rb' ) )
+        X0 = aud_utils.mat_2d_to_3d( X0, agg_num, hop )
         
-            X0 = aud_utils.mat_3d_to_nd(model,X0)
-            test_x.append(X0)
+        X0 = aud_utils.mat_3d_to_nd(model,X0)
     
         # predict
-        p_y_preds = md.predict(test_x)        # probability, size: (n_block,label)
+        p_y_preds = md.predict(X0)        # probability, size: (n_block,label)
         preds = np.argmax( p_y_preds, axis=-1 )     # size: (n_block)
         b = scipy.stats.mode(preds)
         pred = int( b[0] )
@@ -152,24 +144,17 @@ def test(md,csv_file,new_p,model):
     truth.sort()
     return truth,pred
 
-tr_X = list(np.zeros(len(feature),dtype='int'))
-dimy = list(np.zeros(len(feature),dtype='int'))
-for i in range(len(feature)):
-    tr_X[i], tr_y = GetAllData( dev_fd+'/'+feature[i], label_csv, agg_num, hop )
-    print(tr_X[i].shape)
 
+
+tr_X, tr_y = GetAllData( dev_fd, label_csv, agg_num, hop )
+
+print(tr_X.shape)
 print(tr_y.shape)    
-
-for i in range(len(feature)):
-    dimy[i]=tr_X[i].shape[-1]
-    #aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
-
-#tr_X=aud_utils.equalise(tr_X)
-
-for i in range(len(feature)):
-    tr_X[i]=aud_utils.mat_3d_to_nd(model,tr_X[i])
-    print(tr_X[i].shape)
-dimx=tr_X[0].shape[-2]
+    
+tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
+print(tr_X.shape)
+dimx=tr_X.shape[-2]
+dimy=tr_X.shape[-1]
 
 if prep=='dev':
     cross_validation=True
@@ -183,22 +168,19 @@ miz=aud_model.Functional_Model(input_neurons=input_neurons,cross_validation=cros
 
 np.random.seed(68)
 if cross_validation:
-    kf = KFold(len(tr_X[0]),folds,shuffle=True,random_state=42)
+    kf = KFold(len(tr_X),folds,shuffle=True,random_state=42)
     results=[]    
     for train_indices, test_indices in kf:
-        train_x = list(np.zeros(len(feature),dtype='int'))
-        test_x  = list(np.zeros(len(feature),dtype='int'))
-        for i in range(len(feature)):
-            train_x[i] = [tr_X[i][ii] for ii in train_indices]
-            test_x[i]  = [tr_X[i][ii] for ii in test_indices]
-            train_x[i] = np.array(train_x[i])
-            test_x[i]  = np.array(test_x[i])
+        train_x = [tr_X[ii] for ii in train_indices]
         train_y = [tr_y[ii] for ii in train_indices]
+        test_x  = [tr_X[ii] for ii in test_indices]
         test_y  = [tr_y[ii] for ii in test_indices]
         train_y = to_categorical(train_y,num_classes=len(labels))
         test_y = to_categorical(test_y,num_classes=len(labels)) 
         
+        train_x=np.array(train_x)
         train_y=np.array(train_y)
+        test_x=np.array(test_x)
         test_y=np.array(test_y)
         print "Development Mode"
 
@@ -223,14 +205,14 @@ if cross_validation:
         print "Unique in test_y",jj
     print "Results: " + str( np.array(results).mean() )
 else:
-    train_x=tr_X
+    train_x=np.array(tr_X)
     train_y=np.array(tr_y)
     print "Evaluation mode"
     lrmodel=miz.prepare_model()
     train_y = to_categorical(train_y,num_classes=len(labels))
         
     #fit the model
-    lrmodel.fit(train_x,train_y,batch_size=64,epochs=50,verbose=1)
+    lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
     
     truth,pred=test(lrmodel,txt_eva_path,new_p,model)
 

@@ -102,7 +102,7 @@ def logmel(features,path):
     mode=features['mode'][0]
     wav, fs, enc = read_audio('wavread',path)
     wav=convert_mono(wav,mono)
-    assert fs==fsx
+    #assert fs==fsx
     ham_win = np.hamming(1024)
     [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
