@@ -64,13 +64,15 @@ def mat_2d_to_3d(X, agg_num, hop):
 
 def mat_3d_to_nd(model, X):
     [batch_num, dimx, dimy]= X.shape 
-    if model=='DNN':
+    two_d   = ['DNN']
+    three_d = ['RNN']
+    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN']
+    if model in two_d:
         X = X.reshape(batch_num, dimx*dimy)    
-    elif model == 'CNN' or model=='CHOU' or model=='CRNN' or model=='FCRNN'or model=='CBRNN' or model =='MultiCNN':
-        X = X.reshape((batch_num,1,dimx,dimy))
-    elif model=='RNN':
+    elif model in three_d:
         X = X.reshape((batch_num,1,dimx*dimy))
-
+    elif model in four_d:
+        X = X.reshape((batch_num,1,dimx,dimy))
     return X
 
 def equalise(tr_X):
