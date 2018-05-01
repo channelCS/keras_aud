@@ -7,6 +7,7 @@ Email - adityadvlp@gmail.com
 """
 from keras import backend as K
 import numpy as np
+from sklearn.metrics import roc_curve
 import modules as M
 
 def check_dimension(feature,dimy,yaml_file):
@@ -33,14 +34,38 @@ def check_dimension(feature,dimy,yaml_file):
         print "Correct dimension"
 
 def calculate_accuracy(truth,pred):        
-	pos,neg=0,0 
-	for i in range(0,len(pred)):
-		if pred[i] == truth[i]:
-			pos = pos+1
-		else:
-			neg = neg+1
-	acc=(float(pos)/float(len(pred)))*100
-	return acc
+    pos,neg=0,0 
+    for i in range(0,len(pred)):
+        if pred[i] == truth[i]:
+            pos = pos+1
+        else:
+            neg = neg+1
+    acc=(float(pos)/float(len(pred)))*100
+    return acc
+
+def calculate_eer(te_y,y_pred):
+    x = te_y.shape[-1] #num classes
+    eps = 1E-6
+    class_eer=[]
+    for k in xrange(x):
+        f, t, _ = roc_curve(te_y[:,k], y_pred[:,k]) #it takes 1d array as input
+        Points = [(0,0)]+zip(f,t)
+        for i, point in enumerate(Points):
+            if point[0]+eps >= 1-point[1]:
+                break
+        P1 = Points[i-1]; P2 = Points[i]
+            
+        #Interpolate between P1 and P2
+        if abs(P2[0]-P1[0]) < eps:
+            ER = P1[0]        
+        else:        
+            m = (P2[1]-P1[1]) / (P2[0]-P1[0])
+            o = P1[1] - m * P1[0]
+            ER = (1-o) / (1+m) 
+        class_eer.append(ER)
+    
+    EER=np.mean(class_eer)
+    return EER
 
 def get_activations(model, layer, X_batch):
     get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)
