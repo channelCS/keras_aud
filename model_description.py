@@ -8,7 +8,7 @@ Email - akshitadvlp@gmail.com
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, Merge
-from keras.layers import BatchNormalization, ZeroPadding2D
+from keras.layers import BatchNormalization, ZeroPadding2D, Lambda
 from keras.layers import Embedding, LSTM, GRU, Reshape, Bidirectional, TimeDistributed, Permute
 from keras.models import load_model
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
@@ -406,46 +406,6 @@ def conv_deconv(input_neurons,dimx,dimy,dropout,nb_filter,
 
     return model
 
-def multi_cnn2(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
-    # Combine different features and model according to their theoritical properties.
-    # For basic, we have combined mel+ cnn & cqt +cnn in parallel
-    # mini Ensemble model
-    inpx0 = Input(shape=(1,dimx,dimy[0]))
-    x0 = Conv2D(filters=nb_filter,
-               kernel_size=filter_length,
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(inpx0)
-    x0 = MaxPooling2D(pool_size=pool_size)(x0)
-    x0= Dropout(dropout)(x0)
-    h0 = Flatten()(x0)
-
-    inpx1 = Input(shape=(1,dimx,dimy[1]))
-    x1 = Conv2D(filters=nb_filter,
-               kernel_size=filter_length,
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(inpx1)
-    x1 = MaxPooling2D(pool_size=pool_size)(x1)
-    x1= Dropout(dropout)(x1)
-    h1 = Flatten()(x1)
-        
-    
-    combine = Merge(mode='concat')([h0,h1]) 
-    # And finally we add the main logistic regression layer    
-    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
-    main_output = Dense(num_classes,activation=act3,name='score')(wrap)
-    
-    model = Model(inputs=[inpx0,inpx1],outputs=main_output)
-    ################################################
-    model.summary()
-    model.compile(loss='categorical_crossentropy',
-			  optimizer='adadelta',
-			  metrics=['accuracy'])
-    
-    
-    return model
-
 def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # Combine different features and model according to their theoritical properties.
     # For basic, we have combined mel+ cnn & cqt +cnn in parallel
@@ -479,4 +439,94 @@ def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,a
 			  metrics=['accuracy'])
     
     
+    return model
+
+#############################  model.TCNN #################################
+
+def sampling(args):
+    epsilon_std = 1.0
+    latent_dim = 2
+    z_mean, z_log_var = args
+    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], latent_dim),
+                              mean=0., stddev=epsilon_std)
+    return z_mean + K.exp(z_log_var) * epsilon
+
+def transpose_cnn(dimx,dimy,nb_filter,filter_length,num_classes,pool_size=(3,3),dropout=0.1):
+    """
+    First section contains CNN.
+    Deconv layer will be after conv layer to maintain the same shape.
+    The last layer will be a conv layer to calculate class wise score
+    """
+    nb_filter = 64
+    num_conv = 3
+    intermediate_dim = 128
+    latent_dim = 2
+    batch_size = 100
+    inpx = Input(shape=(1,dimx,dimy),name='inpx')
+    
+    conv_1 = Conv2D(filters=1,
+               kernel_size=(2,2),
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(inpx)
+
+    conv_2 = Conv2D(filters=nb_filter,
+               kernel_size=(2,2),
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(conv_1)
+
+    conv_3 = Conv2D(filters=nb_filter,
+               kernel_size=num_conv,
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(conv_2)
+
+    conv_4 = Conv2D(filters=nb_filter,
+               kernel_size=num_conv,
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(conv_3)
+    
+    flat = Flatten()(conv_4)
+    hidden = Dense(intermediate_dim, activation='relu')(flat)
+
+    z_mean = Dense(latent_dim)(hidden)
+    z_log_var = Dense(latent_dim)(hidden)
+
+    z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
+
+    # we instantiate these layers separately so as to reuse them later
+    decoder_hid = Dense(intermediate_dim, activation='relu')
+    decoder_upsample = Dense(nb_filter * dimx * dimy, activation='relu')
+
+    output_shape = (batch_size, nb_filter, dimx, dimy)
+    
+    decoder_reshape = Reshape(output_shape[1:])
+    decoder_deconv_1 = Conv2DTranspose(filters,
+                                   kernel_size=num_conv,
+                                   padding='same',
+                                   strides=1,
+                                   activation='relu')
+    decoder_deconv_2 = Conv2DTranspose(filters,
+                                   kernel_size=num_conv,
+                                   padding='same',
+                                   strides=1,
+                                   activation='relu')
+    output_shape = (batch_size, filters, 29, 29)
+# In this section we apply the concept of transposed convolutional neural network for the task
+# of event detection, deconv will work with tensorflow 
+    print kr(x)
+    x=Conv2DTranspose(filters=nb_filter,padding='same', data_format='channels_first',activation='relu')(x)
+    hx = MaxPooling2D(pool_size=(4,1))(x)
+    x=Conv2DTranspose(filters=nb_filter, kernel_size=256,strides=(4,1),padding='same', data_format='channels_first',activation='relu')(hx)
+    hx = MaxPooling2D(pool_size=(4,1))(x)
+    
+    score=Conv2D(filters=num_classes, kernel_size=256,padding='same', data_format='channels_first',activation='sigmoid')(hx)
+# Check for compiling    
+    model = Model([inpx],score)
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adadelta',
+			  metrics=['accuracy'])
+  
     return model

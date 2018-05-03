@@ -91,7 +91,7 @@ def mat_3d_to_nd(model, X):
     [batch_num, dimx, dimy]= X.shape 
     two_d   = ['DNN']
     three_d = ['RNN']
-    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN']
+    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN', 'TCNN']
     if model in two_d:
         X = X.reshape(batch_num, dimx*dimy)    
     elif model in three_d:

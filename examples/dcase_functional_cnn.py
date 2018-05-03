@@ -9,7 +9,7 @@ import warnings
 warnings.simplefilter("ignore")
 
 import sys
-ka_path="D:/workspace/aditya_akshita/temp"
+ka_path="../.."
 sys.path.insert(0, ka_path)
 from keras_aud import aud_audio, aud_feature
 from keras_aud import aud_model, aud_utils
@@ -46,7 +46,7 @@ prep='eval'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='CNN'               # Name of model
+model='TCNN'               # Name of model
 feature="logmel"          # Name of feature
 
 dropout1=0.1             # 1st Dropout
