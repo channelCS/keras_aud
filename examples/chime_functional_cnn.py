@@ -61,7 +61,9 @@ hop=10                 # Hop Length(Integer)
 
 #aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml')
 #aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml')
-
+path='E:/akshita_workspace/chime_home'
+aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
+bre
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
     Input: Features folder(String), CSV file(String), agg_num(Integer), hop(Integer).

@@ -9,6 +9,9 @@ from keras import backend as K
 import numpy as np
 from sklearn.metrics import roc_curve
 import modules as M
+import csv
+from glob import glob
+from shutil import copyfile
 
 def check_dimension(feature,dimy,yaml_file):
     """
@@ -115,3 +118,45 @@ def equalise(tr_X):
         tr_X[k]=newx
         
     return tr_X
+
+def unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv):
+    p=path+'/chime_home'
+    folder1='/'.join(meta_train_csv.split('/')[:-1])
+    M.CreateFolder(folder1)
+    M.CreateFolder(wav_eva_fd)
+    M.CreateFolder(wav_dev_fd)
+    M.CreateFolder(label_csv)
+    copyfile(p+'/development_chunks_refined.csv',meta_train_csv)
+    copyfile(p+'/evaluation_chunks_refined.csv',meta_test_csv)
+
+    old_path1=path+'/chime_home/chunks'
+    old_path_16=old_path1+'/*.16KHz.wav'
+    old_path_48=old_path1+'/*.48KHz.wav'
+    old_path_csv=old_path1+'/*.csv'
+    i=0
+    for f in glob(old_path_16):
+        i+=1
+    print "Files at 16KHz: ",i
+    i=0
+    for f in glob(old_path_48):
+        i+=1
+    print "Files at 48KHz: ",i
+    with open( meta_test_csv, 'rb') as f:
+        reader = csv.reader(f)
+        lis = list(reader)
+    for li in lis:
+        old_path=old_path1+'/'+li[1]+'.16KHz.wav'
+        new_path=wav_eva_fd+'/'+li[1]+'.wav'
+        copyfile(old_path,new_path)    
+
+    with open( meta_train_csv, 'rb') as g:
+        reader2 = csv.reader(g)
+        lis2 = list(reader2)
+    for li in lis2:
+        old_path=old_path1+'/'+li[1]+'.48KHz.wav'
+        new_path=wav_dev_fd+'/'+li[1]+'.wav'
+        copyfile(old_path,new_path) 
+        
+    for f in glob(old_path_csv):
+        g = label_csv+'/'+ f.split('\\')[-1]
+        copyfile(f,g) 
