@@ -117,7 +117,7 @@ def logmel(features,path,dataset=None):
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
     wav, fs = read_audio('librosa',path,dataset)
-    print "fs before mono",fs #[DEBUG]
+    #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     assert fs==fsx #In case of Dcase fs=44100 and chime fs=16000
     ham_win = np.hamming(1024)

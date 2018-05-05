@@ -138,7 +138,7 @@ def feature_cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,
     return model
 
 ############################# BASIC CBRNN #############################
-def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.2):
     #CNN with biderectional lstm
     print "Functional CBRNN"
     main_input = Input(shape=(1,dimx,dimy))
@@ -147,17 +147,33 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                data_format='channels_first',
                padding='same',
                activation='relu')(main_input)
+    x = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(x)
+    x = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(x)
+    x = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(x)
     hx = MaxPooling2D(pool_size=pool_size)(x)
+    
     wrap= Dropout(dropout)(hx)
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
-    w = Bidirectional(LSTM(32,activation='sigmoid',return_sequences=False))(x)
+    w = Bidirectional(LSTM(128,activation='sigmoid',return_sequences=False))(x)
     wrap= Dropout(dropout)(w)
     main_output = Dense(num_classes, activation='softmax', name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
-    model.compile(loss='categorical_crossentropy',
+    model.compile(loss='binary_crossentropy',
               optimizer='adam',
               metrics=['mse'])
     
@@ -218,6 +234,9 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
 			  metrics=['mse'])
     
     return model 
+
+def tcnn():
+    print "aditya"
 
 ########################################### DYNAMIC MODELS ###########################################
 
@@ -314,6 +333,8 @@ def cnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
 
 ############################# DYNAMIC CBRNN #############################
 def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
+    """
+    """
     pools     = kwargs['kwargs'].get('pools',[])
     drops     = kwargs['kwargs'].get('drops',[])
     bn        = kwargs['kwargs'].get('batch_norm',False)
@@ -382,87 +403,8 @@ def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
 
 #############################  model.conv_deconv #################################
 
-def conv_deconv_chou(dimx,dimy,nb_filter,num_classes):
-    inpx = Input(shape=(1,dimx,dimy),name='inpx')
-    ### 1st Convolution Layer #############
-    x = Conv2D(filters=nb_filter,
-               kernel_size=3,
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(inpx)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    hx = ZeroPadding2D(padding=(2, 1))(hx)
-    ### 2nd Convolution Layer #############
-    x = Conv2D(filters=nb_filter,
-               kernel_size=6,
-               data_format='channels_first',
-               padding='same',
-               activation='tanh')(hx)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    hx = ZeroPadding2D(padding=(2, 1))(hx)
-    ### 3rd Convolution Layer #############
-    x = Conv2D(filters=nb_filter,
-               kernel_size=6,
-               data_format='channels_first',
-               padding='same',
-               activation='tanh')(hx)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    hx = ZeroPadding2D(padding=(2, 1))(hx)
-    ###   DeConvolution Layer #############
-    """
-    hx=Conv2DTranspose(filters=nb_filter,
-               kernel_size=3,
-               data_format='channels_first',
-               padding='same',
-               strides=(4,1))(hx)
-    hx=Conv2DTranspose(filters=nb_filter,
-               kernel_size=3,
-               data_format='channels_first',
-               padding='same',
-               strides=(4,1))(hx)
-    score = Conv2D(filters=num_classes,
-               kernel_size=6,
-               data_format='channels_first',
-               padding='same',
-               activation='sigmoid')(hx)
-    """
-    
-    pooling=GlobalAveragePooling2D()(hx)
-    dense = Dense(1024)(pooling)    
-    dense = Dense(1024)(dense)    
-    score = Dense(num_classes,activation='softmax')(dense)
-    
-    model = Model([inpx],score)
-    model.compile(loss='categorical_crossentropy',
-              optimizer='adadelta',
-              metrics=['accuracy'])
 
-    return model
 
-def conv_deconv(input_neurons,dimx,dimy,dropout,nb_filter,
-                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None):
-    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
-    print "Model CNN with Dropout"
-    inpx = Input(shape=(1,dimx,dimy),name='inpx')
-    
-    x = Conv2D(filters=nb_filter,
-               kernel_size=filter_length,
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(inpx)
-
-    hx = MaxPooling2D(pool_size=pool_size)(x)
-    h = Flatten()(hx)
-    wrap = Dense(input_neurons, activation=act2,name='wrap')(h)
-    wrap= Dropout(dropout)(wrap)
-    score = Dense(num_classes,activation=act3,name='score')(wrap)
-    
-    model = Model([inpx],score)
-    model.compile(loss='categorical_crossentropy',
-              optimizer='adadelta',
-              metrics=['accuracy'])
-
-    return model
 
 def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # Combine different features and model according to their theoritical properties.

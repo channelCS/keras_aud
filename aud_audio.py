@@ -60,6 +60,8 @@ def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',print_arr=[],datase
             Description of feature that should be printed 
     """
     # Introduce features here
+    if dataset is not None:
+        print("Dataset called is",dataset)
     if feature_name in M.get_list():
         yaml_load=M.read_yaml(yaml_file)
         try:            
