@@ -39,7 +39,7 @@ def convert_mono(wav,mono):
     else:
         return wav  
 
-def read_audio(Type,path,dataset_type):
+def read_audio(Type,path,dataset=None):
     """   
     Input: 'str','str','str'
     Output: np.ndarray, int
@@ -47,20 +47,17 @@ def read_audio(Type,path,dataset_type):
     """
     if Type == 'wavread':
         wav,fs,enc = wavread(path)
-        return wav,fs,enc
-    elif Type == 'librosa' and dataset_type == 'chime_2016':
+    elif Type == 'librosa' and dataset == 'chime_2016': # chime 2016 with different sampling rate at development
         wav,fs = librosa.load(path,sr=16000.)
-        return wav,fs
     elif Type == 'librosa':
         wav,fs = librosa.load(path)
-        return wav,fs
     elif Type =='readwav':
         Struct = wavio.read( path )
         wav = Struct.data.astype(float) / np.power(2, Struct.sampwidth*8-1)
         fs = Struct.rate
-        return wav, fs
     else:
         print "not listed"
+    return wav, fs
         
 #def set_sampling_rate(sr):
     
@@ -103,7 +100,7 @@ def mel(features,path):
     #X=feature_normalize(X)
     return X
 
-def logmel(features,path):
+def logmel(features,path,dataset=None):
     """
     This function extracts log mel-spectrogram from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -119,8 +116,7 @@ def logmel(features,path):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    #wav, fs, enc = read_audio('wavread',path) for Dcase
-    wav, fs = read_audio('librosa',path,'chime_2016') # chime 2016 with different sampling rate at development
+    wav, fs = read_audio('librosa',path,dataset)
     print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     assert fs==fsx #In case of Dcase fs=44100 and chime fs=16000
