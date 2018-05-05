@@ -17,12 +17,8 @@ from keras_aud import aud_model, aud_utils
 import csv
 import cPickle
 import numpy as np
-import scipy
-import time
 from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import KFold
-from keras.utils import to_categorical
-from keras.models import load_model
 
 ## SET PATHS ACCORDING TO WHERE DATA SHOULD BE STORED
  

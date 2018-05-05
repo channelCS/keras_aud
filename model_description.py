@@ -140,7 +140,7 @@ def feature_cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,
 ############################# BASIC CBRNN #############################
 def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     #CNN with biderectional lstm
-    print "CBRNN"
+    print "Functional CBRNN"
     main_input = Input(shape=(1,dimx,dimy))
     x = Conv2D(filters=nb_filter,
                kernel_size=filter_length,
@@ -152,9 +152,9 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
-    w = Bidirectional(LSTM(32,activation='relu',return_sequences=False))(x)
+    w = Bidirectional(LSTM(32,activation='sigmoid',return_sequences=False))(x)
     wrap= Dropout(dropout)(w)
-    main_output = Dense(num_classes, activation='sigmoid', name='main_output')(wrap)
+    main_output = Dense(num_classes, activation='softmax', name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
     model.compile(loss='categorical_crossentropy',
@@ -249,6 +249,7 @@ def dnn_dynamic(num_classes,input_dim,acts,**kwargs):
     score = Dense(num_classes,activation=last_act,name='score')(x)
     
     model = Model(inpx,score)
+    model.summary()
     model.compile(loss='categorical_crossentropy',
               optimizer='adadelta',
               metrics=['accuracy'])
@@ -304,6 +305,7 @@ def cnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
     score = Dense(num_classes,activation=last_act,name='score')(x)
     
     model = Model(inpx,score)
+    model.summary()
     model.compile(loss='categorical_crossentropy',
               optimizer='adadelta',
               metrics=['accuracy'])
