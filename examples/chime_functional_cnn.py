@@ -24,6 +24,8 @@ from sklearn.cross_validation import KFold
 from keras.utils import to_categorical
 from keras.models import load_model
 
+## SET PATHS ACCORDING TO WHERE DATA SHOULD BE STORED
+ 
 wav_dev_fd   = ka_path+'/chime_data/audio/dev'
 wav_eva_fd   = ka_path+'/chime_data/audio/eva'
 dev_fd       = ka_path+'/chime_data/features/dev'
@@ -37,38 +39,47 @@ labels = [ 'c', 'm', 'f', 'v', 'p', 'b', 'o', 'S' ]
 lb_to_id = { lb:id for id, lb in enumerate(labels) }
 id_to_lb = { id:lb for id, lb in enumerate(labels) }
 
+## PARAMETERS
+
 prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='ACRNN'               # Name of model
+model='CBRNN'               # Name of model
 feature="logmel"          # Name of feature
 
-dropout1=0.1             # 1st Dropout
+dropout1=0.1            # 1st Dropout
 act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
-input_neurons=400      # Number of Neurons
-epochs=10             # Number of Epochs
+input_neurons=500      # Number of Neurons
+epochs=20             # Number of Epochs
 batchsize=128          # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=3        # Size of Filter
-nb_filter=100          # Number of Filters
+nb_filter=128         # Number of Filters
 #Parameters that are passed to the features.
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
 
-print "Number of folds",folds
 print "Model Type",model_type
 print "Input Neurons",input_neurons
 print "Epochs",epochs
 print "Batchsize",batchsize
 print "Number of filters",nb_filter
+
+## UNPACK THE DATASET ACCORDING TO KERAS_AUD
+
+# [NEEDED AT INITIAL STAGE]path='E:/akshita_workspace/chime_home'
+# [NEEDED AT INITIAL STAGE]aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
+
+## EXTRACT FEATURES
+
 #aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml')
 #aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml')
-#path='E:/akshita_workspace/chime_home'
-#aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
+
+
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
@@ -168,6 +179,7 @@ dimx=tr_X.shape[-2]
 dimy=tr_X.shape[-1]
 
 if prep=='dev':
+    print "Number of folds",folds
     cross_validation=True
 else:
     cross_validation=False

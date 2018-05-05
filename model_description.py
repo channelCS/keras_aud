@@ -64,8 +64,8 @@ def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
     
     model = Model([inpx],score)
     model.compile(loss='categorical_crossentropy',
-              optimizer='adadelta',
-              metrics=['accuracy'])
+              optimizer='adam',
+              metrics=['mse'])
     
     return model
 
@@ -146,20 +146,20 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='tanh')(main_input)
+               activation='relu')(main_input)
     hx = MaxPooling2D(pool_size=pool_size)(x)
     wrap= Dropout(dropout)(hx)
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
-    w = Bidirectional(LSTM(32,return_sequences=False))(x)
+    w = Bidirectional(LSTM(32,activation='relu',return_sequences=False))(x)
     wrap= Dropout(dropout)(w)
     main_output = Dense(num_classes, activation='sigmoid', name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
     model.compile(loss='categorical_crossentropy',
               optimizer='adam',
-              metrics=['accuracy'])
+              metrics=['mse'])
     
     return model
 
@@ -173,7 +173,7 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation=act1)(main_input)
+               activation='relu')(main_input)
     hx = MaxPooling2D(pool_size=pool_size)(x)
     wrap= Dropout(dropout)(hx)
     x = Permute((2,1,3))(wrap)
@@ -181,13 +181,14 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     x = Reshape((b*d,c))(x) 
     
     #w = Bidirectional(LSTM(32,return_sequences=True))(x)
-    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(x)
-    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(x)
+    rnnout = Bidirectional(LSTM(128, activation='linear', return_sequences=True))(x)
+    rnnout_gate = Bidirectional(LSTM(128, activation='sigmoid', return_sequences=True))(x)
     w = Multiply()([rnnout, rnnout_gate])
     
     
-    hidden_size = int(w._keras_shape[2]) # _t stands for transpose
+    hidden_size = int(w._keras_shape[2])
     hidden_states_t = Permute((2, 1), name='attention_input_t')(w)  # hidden_states_t.shape = (batch_size, hidden_size, time_steps)
+    
     hidden_states_t = Reshape((hidden_size, hidden_states_t._keras_shape[2]), name='attention_input_reshape')(hidden_states_t)
     # Inside dense layer
     # a (batch_size, hidden_size, time_steps) dot W (time_steps, time_steps) => (batch_size, hidden_size, time_steps)
@@ -209,7 +210,6 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     h_t = Reshape((hidden_size,))(h_t)
     pre_activation = concatenate([context_vector, h_t], name='attention_output')
     attention_vector = Dense(128, use_bias=False, activation='tanh', name='attention_vector')(pre_activation)
-    
     main_output = Dense(num_classes, activation='softmax')(attention_vector)
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()

@@ -39,15 +39,18 @@ def convert_mono(wav,mono):
     else:
         return wav  
 
-def read_audio(Type,path):
+def read_audio(Type,path,dataset_type):
     """   
-    Input:
-    Output:
+    Input: 'str','str','str'
+    Output: np.ndarray, int
         
     """
     if Type == 'wavread':
         wav,fs,enc = wavread(path)
         return wav,fs,enc
+    elif Type == 'librosa' and dataset_type == 'chime_2016':
+        wav,fs = librosa.load(path,sr=16000.)
+        return wav,fs
     elif Type == 'librosa':
         wav,fs = librosa.load(path)
         return wav,fs
@@ -116,7 +119,9 @@ def logmel(features,path):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    wav, fs, enc = read_audio('wavread',path)
+    #wav, fs, enc = read_audio('wavread',path) for Dcase
+    wav, fs = read_audio('librosa',path,'chime_2016') # chime 2016 with different sampling rate at development
+    print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     assert fs==fsx #In case of Dcase fs=44100 and chime fs=16000
     ham_win = np.hamming(1024)
