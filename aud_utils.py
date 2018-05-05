@@ -36,7 +36,12 @@ def check_dimension(feature,dimy,yaml_file):
     else:
         print "Correct dimension"
 
-def calculate_accuracy(truth,pred):        
+def calculate_accuracy(truth,pred):   
+    """   
+    Input:
+    Output:
+        
+    """
     pos,neg=0,0 
     for i in range(0,len(pred)):
         if pred[i] == truth[i]:
@@ -47,6 +52,11 @@ def calculate_accuracy(truth,pred):
     return acc
 
 def calculate_eer(te_y,y_pred):
+    """   
+    Input:
+    Output:
+        
+    """
     x = len(te_y[0]) #num classes
     eps = 1E-6
     class_eer=[]
@@ -71,12 +81,22 @@ def calculate_eer(te_y,y_pred):
     return EER
 
 def get_activations(model, layer, X_batch):
+    """   
+    Input:
+    Output:
+        
+    """
     get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)
     activations = get_activations([X_batch,0])
     print(activations)
     return activations
 
 def mat_2d_to_3d(X, agg_num, hop):
+    """   
+    Input:
+    Output:
+        
+    """
     # pad to at least one block
     len_X, n_in = X.shape
     if (len_X < agg_num):
@@ -91,10 +111,15 @@ def mat_2d_to_3d(X, agg_num, hop):
     return np.array(X3d)
 
 def mat_3d_to_nd(model, X):
+    """   
+    Input:
+    Output:
+        
+    """
     [batch_num, dimx, dimy]= X.shape 
     two_d   = ['DNN']
     three_d = ['RNN']
-    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN', 'TCNN']
+    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN', 'TCNN','ACRNN']
     if model in two_d:
         X = X.reshape(batch_num, dimx*dimy)    
     elif model in three_d:
@@ -104,6 +129,11 @@ def mat_3d_to_nd(model, X):
     return X
 
 def equalise(tr_X):
+    """   
+    Input:
+    Output:
+        
+    """
     chan=[]
     l=len(max(tr_X[:]))
     chan=[i for i in range(len(tr_X)) if len(tr_X[i])!=l]
@@ -120,6 +150,11 @@ def equalise(tr_X):
     return tr_X
 
 def unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv):
+    """   
+    Input:
+    Output:
+        
+    """
     p=path+'/chime_home'
     folder1='/'.join(meta_train_csv.split('/')[:-1])
     M.CreateFolder(folder1)

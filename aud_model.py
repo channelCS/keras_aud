@@ -49,6 +49,9 @@ class Functional_Model:
         self.num_classes=num_classes
 
     def prepare_model(self):
+        """
+        This function
+        """
         if self.model=='DNN':
             lrmodel=M.dnn(num_classes=self.num_classes,input_neurons=self.input_neurons,input_dim=self.dimx*self.dimy,dropout=self.dropout1,act1=self.act1,act2=self.act2,act3=self.act3)
             return lrmodel
@@ -70,6 +73,9 @@ class Functional_Model:
         elif self.model=='MultiCNN':
             lrmodel=M.multi_cnn(num_classes=self.num_classes,dropout=self.dropout1,input_neurons=self.input_neurons,act1=self.act1,act2=self.act2,act3=self.act3,nb_filter = self.nb_filter,filter_length =self.filter_length,dimx = self.dimx,dimy = self.dimy)
             return lrmodel
+        elif self.model=='ACRNN':
+            lrmodel=M.ACRNN(num_classes=self.num_classes,dropout=self.dropout1,input_neurons=self.input_neurons,act1=self.act1,act2=self.act2,act3=self.act3,nb_filter = self.nb_filter,filter_length =self.filter_length,dimx = self.dimx,dimy = self.dimy)
+            return lrmodel 
         elif self.model=='TCNN':
             lrmodel=M.transpose_cnn(num_classes=self.num_classes,dropout=self.dropout1,act1=self.act1,act2=self.act2,act3=self.act3,dimx = self.dimx,dimy = self.dimy,nb_filter = self.nb_filter)
             return lrmodel

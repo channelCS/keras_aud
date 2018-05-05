@@ -41,7 +41,7 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='CNN'               # Name of model
+model='ACRNN'               # Name of model
 feature="logmel"          # Name of feature
 
 dropout1=0.1             # 1st Dropout
@@ -50,7 +50,7 @@ act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
 input_neurons=400      # Number of Neurons
-epochs=4              # Number of Epochs
+epochs=10             # Number of Epochs
 batchsize=128          # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=3        # Size of Filter
@@ -59,11 +59,17 @@ nb_filter=100          # Number of Filters
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
 
+print "Number of folds",folds
+print "Model Type",model_type
+print "Input Neurons",input_neurons
+print "Epochs",epochs
+print "Batchsize",batchsize
+print "Number of filters",nb_filter
 #aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml')
 #aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml')
-path='E:/akshita_workspace/chime_home'
-aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
-bre
+#path='E:/akshita_workspace/chime_home'
+#aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
+
 def GetAllData(fe_fd, csv_file, agg_num, hop):
     """
     Input: Features folder(String), CSV file(String), agg_num(Integer), hop(Integer).
@@ -222,4 +228,4 @@ else:
     truth,pred=test(lrmodel,meta_test_csv,model)
 
     eer=aud_utils.calculate_eer(truth,pred)
-    print "EER %.2f prcnt"%eer
+    print "EER %.2f"%eer

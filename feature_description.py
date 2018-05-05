@@ -13,6 +13,11 @@ import librosa
 import wavio
 
 def feature_normalize(feature_data):
+    """   
+    Input:
+    Output:
+        
+    """
     N = feature_data.shape[0]
     S1 = np.sum(feature_data, axis=0)
     S2 = np.sum(feature_data ** 2, axis=0)
@@ -24,12 +29,22 @@ def feature_normalize(feature_data):
     return feature_data
 
 def convert_mono(wav,mono):
+    """   
+    Input:
+    Output:
+        
+    """
     if mono and wav.ndim==2:
         return np.mean( wav, axis=-1 )
     else:
         return wav  
 
 def read_audio(Type,path):
+    """   
+    Input:
+    Output:
+        
+    """
     if Type == 'wavread':
         wav,fs,enc = wavread(path)
         return wav,fs,enc
@@ -48,6 +63,7 @@ def read_audio(Type,path):
     
         
 def mel(features,path):
+    
     """
     This function extracts mel-spectrogram from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -102,7 +118,7 @@ def logmel(features,path):
     mode=features['mode'][0]
     wav, fs, enc = read_audio('wavread',path)
     wav=convert_mono(wav,mono)
-    #assert fs==fsx
+    assert fs==fsx #In case of Dcase fs=44100 and chime fs=16000
     ham_win = np.hamming(1024)
     [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
@@ -118,7 +134,7 @@ def logmel(features,path):
     X = np.log( X + 1e-8)
     X = X[:, 0:]
     
-    #X=feature_normalize(X)
+    X=feature_normalize(X)
     return X
 
 def cqt(features,path):
