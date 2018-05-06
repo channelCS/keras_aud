@@ -143,8 +143,8 @@ def feature_cnn_rnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,
     
     return model
 
-############################# BASIC CBRNN #############################
-def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(1,2),dropout=0.2):
+############################# ADITYA: DO THIS IN DYNAMIC AND CHANGE THE CODE BACK TO CBRNN , BASIC CBRNN #############################
+def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.2):
     #CNN with biderectional lstm
     print "Functional CBRNN"
     main_input = Input(shape=(1,dimx,dimy))
@@ -155,40 +155,41 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                activation='relu',use_bias=True)(main_input)
     #x1=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=pool_size)(x)
-    wrap= Dropout(dropout)(hx)
+#    wrap= Dropout(dropout)(hx)
     
     x = Conv2D(filters=nb_filter,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(wrap)
+               activation='relu',use_bias=True)(hx)
     #x2=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=pool_size)(x)
-    wrap= Dropout(dropout)(hx)
+#    wrap= Dropout(dropout)(hx)
     
     x = Conv2D(filters=nb_filter,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(wrap)
+               activation='relu',use_bias=True)(hx)
     #x3=BatchNormalization()(x)
-    hx = MaxPooling2D(pool_size=(1,2))(x)
-    wrap= Dropout(dropout)(hx)
+    hx = MaxPooling2D(pool_size=(2,2))(x)
+#    wrap= Dropout(dropout)(hx)
     
     x = Conv2D(filters=nb_filter,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(wrap)
+               activation='relu',use_bias=True)(hx)
 #    x4=BatchNormalization()(x)
-    hx = MaxPooling2D(pool_size=(1,4))(x)
+    hx = MaxPooling2D(pool_size=(1,1))(x)
     wrap= Dropout(dropout)(x)
     
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
     
-    w = Bidirectional(LSTM(128,activation='sigmoid',return_sequences=False))(x)
+#    w = Bidirectional(LSTM(32,activation='sigmoid',return_sequences=False))(x)
+    w = LSTM(128,activation='sigmoid',return_sequences=False)(x)
     wrap= Dropout(dropout)(w)
     
     main_output = Dense(num_classes, activation='sigmoid', name='main_output')(wrap)
