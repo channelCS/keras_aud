@@ -41,20 +41,20 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='ACRNN'               # Name of model
+model='CBRNN'               # Name of model
 feature="logmel"          # Name of feature
 
-dropout1=0.25            # 1st Dropout
+dropout1=0.25           # 1st Dropout
 act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
-input_neurons=500      # Number of Neurons
-epochs=10             # Number of Epochs
+input_neurons=400      # Number of Neurons
+epochs=20           # Number of Epochs
 batchsize=128          # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=5        # Size of Filter
-nb_filter=100         # Number of Filters
+nb_filter=256         # Number of Filters
 #Parameters that are passed to the features.
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
@@ -72,9 +72,8 @@ print "Number of filters",nb_filter
 
 ## EXTRACT FEATURES
 
-aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
-aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
-bre
+#aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
+#aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
 
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
