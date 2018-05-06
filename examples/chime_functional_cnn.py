@@ -41,7 +41,7 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='CBRNN'               # Name of model
+model='ACRNN'               # Name of model
 feature="logmel"          # Name of feature
 
 dropout1=0.25          # 1st Dropout
@@ -50,7 +50,7 @@ act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
 input_neurons=500      # Number of Neurons
-epochs=30           # Number of Epochs
+epochs=15           # Number of Epochs
 batchsize=128          # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=5      # Size of Filter

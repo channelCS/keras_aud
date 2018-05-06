@@ -9,7 +9,7 @@ from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, Merge
 from keras.layers import BatchNormalization, ZeroPadding2D, Lambda, dot,Activation,concatenate
-from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute
+from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
 from keras import backend as K
@@ -202,58 +202,133 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     return model
 
 ####################### ATTENTION MODEL ACRNN ##################################
+def block(input):
+    cnn = Conv2D(128, (3, 3), padding="same", activation="linear", use_bias=False)(input)
+    cnn = BatchNormalization(axis=-1)(cnn)
+
+    cnn1 = Lambda(slice1, output_shape=slice1_output_shape)(cnn)
+    cnn2 = Lambda(slice2, output_shape=slice2_output_shape)(cnn)
+
+    cnn1 = Activation('linear')(cnn1)
+    cnn2 = Activation('sigmoid')(cnn2)
+
+    out = Multiply()([cnn1, cnn2])
+    return out
+
+def slice1(x):
+    return x[:, :, :, 0:64]
+
+def slice2(x):
+    return x[:, :, :, 64:128]
+
+def slice1_output_shape(input_shape):
+    return tuple([input_shape[0],input_shape[1],input_shape[2],64])
+
+def slice2_output_shape(input_shape):
+    return tuple([input_shape[0],input_shape[1],input_shape[2],64])
+
+# Attention weighted sum
+def outfunc(vects):
+    cla, att = vects    # (N, n_time, n_out), (N, n_time, n_out)
+    att = K.clip(att, 1e-7, 1.)
+    out = K.sum(cla * att, axis=1) / K.sum(att, axis=1)     # (N, n_out)
+    return out
 
 def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # CNN + bidirectional lstm model with attention shared across all input dimensions
     print "ACRNN"
-    main_input = Input(shape=(1,dimx,dimy))
-    x = Conv2D(filters=nb_filter,
-               kernel_size=filter_length,
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(main_input)
-    hx = MaxPooling2D(pool_size=pool_size)(x)
-    wrap= Dropout(dropout)(hx)
-    x = Permute((2,1,3))(wrap)
-    a,b,c,d= kr(x)
-    x = Reshape((b*d,c))(x) 
+#    main_input = Input(shape=(1,dimx,dimy))
+#    x = Conv2D(filters=nb_filter,
+#               kernel_size=filter_length,
+#               data_format='channels_first',
+#               padding='same',
+#               activation='relu',use_bias=False)(main_input)
+#    hx = MaxPooling2D(pool_size=pool_size)(x)
+#    wrap= Dropout(dropout)(hx)
+#    x = Permute((2,1,3))(wrap)
+#    a,b,c,d= kr(x)
+#    x = Reshape((b*d,c))(x) 
+#    
+#    #w = Bidirectional(LSTM(32,return_sequences=True))(x)
+#    rnnout = Bidirectional(LSTM(64, activation='linear', return_sequences=True))(x)
+#    rnnout_gate = Bidirectional(LSTM(64, activation='sigmoid', return_sequences=True))(x)
+#    w = Multiply()([rnnout, rnnout_gate])
+#    
+#    
+#    hidden_size = int(w._keras_shape[2])
+#    hidden_states_t = Permute((2, 1), name='attention_input_t')(w)  # hidden_states_t.shape = (batch_size, hidden_size, time_steps)
+#    
+#    hidden_states_t = Reshape((hidden_size, hidden_states_t._keras_shape[2]), name='attention_input_reshape')(hidden_states_t)
+#    # Inside dense layer
+#    # a (batch_size, hidden_size, time_steps) dot W (time_steps, time_steps) => (batch_size, hidden_size, time_steps)
+#    # W is the trainable weight matrix of attention
+#    # Luong's multiplicative style score
+#    score_first_part = Dense(hidden_states_t._keras_shape[2], use_bias=False, name='attention_score_vec')(hidden_states_t)
+#    score_first_part_t = Permute((2, 1), name='attention_score_vec_t')(score_first_part)
+#    #            score_first_part_t         dot        last_hidden_state     => attention_weights
+#    # (batch_size, time_steps, hidden_size) dot (batch_size, hidden_size, 1) => (batch_size, time_steps, 1)
+#    h_t = Lambda(lambda x: x[:, :, -1], output_shape=(hidden_size, 1), name='last_hidden_state')(hidden_states_t)
+#    score = dot([score_first_part_t, h_t], [2, 1], name='attention_score')
+#    attention_weights = Activation('sigmoid', name='attention_weight')(score)
+#    # if SINGLE_ATTENTION_VECTOR:
+#    #     a = Lambda(lambda x: K.mean(x, axis=1), name='dim_reduction')(a)
+#    #     a = RepeatVector(hidden_size)(a)
+#    # (batch_size, hidden_size, time_steps) dot (batch_size, time_steps, 1) => (batch_size, hidden_size, 1)
+#    context_vector = dot([hidden_states_t, attention_weights], [2, 1], name='context_vector')
+#    context_vector = Reshape((hidden_size,))(context_vector)
+#    h_t = Reshape((hidden_size,))(h_t)
+#    pre_activation = concatenate([context_vector, h_t], name='attention_output')
+#    attention_vector = Dense(128, use_bias=False, activation='tanh', name='attention_vector')(pre_activation)
+#    main_output = Dense(num_classes, activation='softmax')(attention_vector)
+#    model = Model(inputs=main_input, outputs=main_output)
+#    model.summary()
+#    model.compile(loss='binary_crossentropy',
+#			  optimizer='adam',
+#			  metrics=['mse'])
+    input_logmel = Input(shape=(dimx,dimy))
+    x = Input(shape=(1,dimx,dimy))
+    a1=Permute((2,3,1))(x)
+
+    a1 = block(a1)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 32, 128)
     
-    #w = Bidirectional(LSTM(32,return_sequences=True))(x)
-    rnnout = Bidirectional(LSTM(128, activation='linear', return_sequences=True))(x)
-    rnnout_gate = Bidirectional(LSTM(128, activation='sigmoid', return_sequences=True))(x)
-    w = Multiply()([rnnout, rnnout_gate])
+    a1 = block(a1)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 16, 128)
     
+    a1 = block(a1)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 8, 128)
     
-    hidden_size = int(w._keras_shape[2])
-    hidden_states_t = Permute((2, 1), name='attention_input_t')(w)  # hidden_states_t.shape = (batch_size, hidden_size, time_steps)
+    a1 = block(a1)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 4, 128)
     
-    hidden_states_t = Reshape((hidden_size, hidden_states_t._keras_shape[2]), name='attention_input_reshape')(hidden_states_t)
-    # Inside dense layer
-    # a (batch_size, hidden_size, time_steps) dot W (time_steps, time_steps) => (batch_size, hidden_size, time_steps)
-    # W is the trainable weight matrix of attention
-    # Luong's multiplicative style score
-    score_first_part = Dense(hidden_states_t._keras_shape[2], use_bias=False, name='attention_score_vec')(hidden_states_t)
-    score_first_part_t = Permute((2, 1), name='attention_score_vec_t')(score_first_part)
-    #            score_first_part_t         dot        last_hidden_state     => attention_weights
-    # (batch_size, time_steps, hidden_size) dot (batch_size, hidden_size, 1) => (batch_size, time_steps, 1)
-    h_t = Lambda(lambda x: x[:, :, -1], output_shape=(hidden_size, 1), name='last_hidden_state')(hidden_states_t)
-    score = dot([score_first_part_t, h_t], [2, 1], name='attention_score')
-    attention_weights = Activation('sigmoid', name='attention_weight')(score)
-    # if SINGLE_ATTENTION_VECTOR:
-    #     a = Lambda(lambda x: K.mean(x, axis=1), name='dim_reduction')(a)
-    #     a = RepeatVector(hidden_size)(a)
-    # (batch_size, hidden_size, time_steps) dot (batch_size, time_steps, 1) => (batch_size, hidden_size, 1)
-    context_vector = dot([hidden_states_t, attention_weights], [2, 1], name='context_vector')
-    context_vector = Reshape((hidden_size,))(context_vector)
-    h_t = Reshape((hidden_size,))(h_t)
-    pre_activation = concatenate([context_vector, h_t], name='attention_output')
-    attention_vector = Dense(128, use_bias=False, activation='tanh', name='attention_vector')(pre_activation)
-    main_output = Dense(num_classes, activation='softmax')(attention_vector)
-    model = Model(inputs=main_input, outputs=main_output)
+    a1 = Conv2D(256, (3, 3), padding="same", activation="relu", use_bias=True)(a1)
+    a1 = MaxPooling2D(pool_size=(1, 4))(a1) # (N, 240, 1, 256)
+    
+#    x=Permute((2,3,1))(a1)
+    a,b,c,d=kr(x)
+    a1 = Reshape((b*c,d))(x) # (N, 240, 256)
+    
+    # Gated BGRU
+    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(a1)
+    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(a1)
+    a2 = Multiply()([rnnout, rnnout_gate])
+    
+    # Attention
+    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a2)
+    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a2)
+    out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
+    
+    model = Model(input_logmel, out)
     model.summary()
+    
+    # Compile model
     model.compile(loss='binary_crossentropy',
-			  optimizer='adam',
-			  metrics=['mse'])
+                  optimizer='adam',
+                  metrics=['accuracy'])
     
     return model 
 
