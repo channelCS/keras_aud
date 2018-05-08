@@ -76,7 +76,7 @@ def plot_spec(y,save='',spec_type='log', hop_length=512, cmap='magma', show_file
     if save != '':
         plt.savefig(save)
 
-def extract_one(feature_name,wav_file,yaml_file=''):
+def extract_one(feature_name,wav_file,yaml_file='',dataset=None):
     """
     This function extracts features from audio.
 
@@ -96,7 +96,7 @@ def extract_one(feature_name,wav_file,yaml_file=''):
         except Exception as e:
             print("Make sure you add the {} to the YAML file".format(e))
             raise SystemExit
-        x = M.call_ftr_one(feature_name,featx,wav_file)
+        x = M.call_ftr_one(feature_name,featx,wav_file,dataset)
         print("Something wrong happened" if type(x) == 'int' else "Feature found")
         return x
     else:

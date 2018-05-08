@@ -49,6 +49,8 @@ def read_audio(Type,path,dataset=None):
         wav,fs,enc = wavread(path)
     elif Type == 'librosa' and dataset == 'chime_2016': # chime 2016 with different sampling rate at development
         wav,fs = librosa.load(path,sr=16000.)
+    elif Type == 'librosa' and dataset == 'dcase_2016': # chime 2016 with different sampling rate at development
+        wav,fs = librosa.load(path,sr=44100.)
     elif Type == 'librosa':
         wav,fs = librosa.load(path)
     elif Type =='readwav':
@@ -84,7 +86,8 @@ def mel(features,path,dataset=None):
     #fsx = librosa.resample(wav,fs, 44100)
     #wav, fs = librosa.load(path)
     wav=convert_mono(wav,mono)
-    assert fs == fsx
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     ham_win = np.hamming(hamming_window)
     [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
@@ -119,7 +122,8 @@ def logmel(features,path,dataset=None):
     wav, fs = read_audio('librosa',path,dataset)
     #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
-    assert fs==fsx #In case of Dcase fs=44100 and chime fs=16000
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     ham_win = np.hamming(1024)
     [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
