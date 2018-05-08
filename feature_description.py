@@ -62,7 +62,7 @@ def read_audio(Type,path,dataset=None):
 #def set_sampling_rate(sr):
     
         
-def mel(features,path):
+def mel(features,path,dataset=None):
     
     """
     This function extracts mel-spectrogram from audio.
@@ -80,7 +80,7 @@ def mel(features,path):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    wav, fs, enc = read_audio('wavread',path)
+    wav, fs = read_audio('librosa',path,dataset)
     #fsx = librosa.resample(wav,fs, 44100)
     #wav, fs = librosa.load(path)
     wav=convert_mono(wav,mono)
@@ -97,7 +97,7 @@ def mel(features,path):
     
     X = np.dot( X, melW.T )
     X = X[:, 0:]
-    #X=feature_normalize(X)
+    X=feature_normalize(X)
     return X
 
 def logmel(features,path,dataset=None):

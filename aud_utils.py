@@ -119,13 +119,14 @@ def mat_3d_to_nd(model, X):
     [batch_num, dimx, dimy]= X.shape 
     two_d   = ['DNN']
     three_d = ['RNN']
-    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN', 'TCNN','ACRNN']
+    four_d  = ['CNN', 'CHOU', 'CRNN', 'FCRNN', 'CBRNN', 'MultiCNN', 'TCNN','ACRNN', 'MultiACRNN']
     if model in two_d:
         X = X.reshape(batch_num, dimx*dimy)    
     elif model in three_d:
         X = X.reshape((batch_num,1,dimx*dimy))
     elif model in four_d:
         X = X.reshape((batch_num,1,dimx,dimy))
+        
     return X
 
 def equalise(tr_X):

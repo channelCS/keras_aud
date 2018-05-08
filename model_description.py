@@ -8,10 +8,11 @@ Email - akshitadvlp@gmail.com
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, Merge
-from keras.layers import BatchNormalization, ZeroPadding2D, Lambda, dot,Activation,concatenate
+from keras.layers import BatchNormalization, ZeroPadding2D, Lambda, dot,Activation,Concatenate
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
+from keras import optimizers
 from keras import backend as K
 import numpy as np
 
@@ -152,7 +153,7 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(main_input)
+               activation='relu',use_bias=False)(main_input)
     #x1=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=pool_size)(x)
 #    wrap= Dropout(dropout)(hx)
@@ -161,7 +162,7 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(hx)
+               activation='relu',use_bias=False)(hx)
     #x2=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=pool_size)(x)
 #    wrap= Dropout(dropout)(hx)
@@ -170,7 +171,7 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(hx)
+               activation='relu',use_bias=False)(hx)
     #x3=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=(2,2))(x)
 #    wrap= Dropout(dropout)(hx)
@@ -179,7 +180,7 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
-               activation='relu',use_bias=True)(hx)
+               activation='relu',use_bias=False)(hx)
 #    x4=BatchNormalization()(x)
     hx = MaxPooling2D(pool_size=(1,1))(x)
     wrap= Dropout(dropout)(x)
@@ -187,9 +188,9 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     x = Permute((2,1,3))(wrap)
     a,b,c,d= kr(x)
     x = Reshape((b*d,c))(x) 
+#    x = Reshape((c*d,b))(x) 
     
-#    w = Bidirectional(LSTM(32,activation='sigmoid',return_sequences=False))(x)
-    w = LSTM(128,activation='sigmoid',return_sequences=False)(x)
+    w = Bidirectional(LSTM(32,activation='sigmoid',return_sequences=False))(x)
     wrap= Dropout(dropout)(w)
     
     main_output = Dense(num_classes, activation='sigmoid', name='main_output')(wrap)
@@ -202,9 +203,10 @@ def cbrnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     return model
 
 ####################### ATTENTION MODEL ACRNN ##################################
-def block(input):
-    cnn = Conv2D(128, (3, 3), padding="same", activation="linear", use_bias=False)(input)
-    cnn = BatchNormalization(axis=-1)(cnn)
+def block(Input):
+    print kr(Input)
+    cnn = Conv2D(128, (3, 3), data_format='channels_first',padding="same", activation="linear", use_bias=False)(Input)
+    #cnn = BatchNormalization(axis=-1)(cnn)
 
     cnn1 = Lambda(slice1, output_shape=slice1_output_shape)(cnn)
     cnn2 = Lambda(slice2, output_shape=slice2_output_shape)(cnn)
@@ -216,16 +218,16 @@ def block(input):
     return out
 
 def slice1(x):
-    return x[:, :, :, 0:64]
+    return x[:,0:64, :, :]
 
 def slice2(x):
-    return x[:, :, :, 64:128]
+    return x[:,64:128,:, :]
 
 def slice1_output_shape(input_shape):
-    return tuple([input_shape[0],input_shape[1],input_shape[2],64])
+    return tuple([input_shape[0],64,input_shape[-2],input_shape[-1]])
 
 def slice2_output_shape(input_shape):
-    return tuple([input_shape[0],input_shape[1],input_shape[2],64])
+    return tuple([input_shape[0],64,input_shape[-2],input_shape[-1]])
 
 # Attention weighted sum
 def outfunc(vects):
@@ -234,7 +236,7 @@ def outfunc(vects):
     out = K.sum(cla * att, axis=1) / K.sum(att, axis=1)     # (N, n_out)
     return out
 
-def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+def ACRNN_backup(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # CNN + bidirectional lstm model with attention shared across all input dimensions
     print "ACRNN"
 #    main_input = Input(shape=(1,dimx,dimy))
@@ -285,44 +287,44 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
 #    model.compile(loss='binary_crossentropy',
 #			  optimizer='adam',
 #			  metrics=['mse'])
-    input_logmel = Input(shape=(dimx,dimy))
-    x = Input(shape=(1,dimx,dimy))
-    a1=Permute((2,3,1))(x)
+    #input_logmel = Input(shape=(dimx,dimy))
+    input_logmel = Input(shape=(1,dimx,dimy))
+#    a1=Permute((2,3,1))(x)
 
+    a1 = block(input_logmel)
     a1 = block(a1)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 32, 128)
-    
-    a1 = block(a1)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 16, 128)
-    
-    a1 = block(a1)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 8, 128)
-    
-    a1 = block(a1)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1, 2))(a1) # (N, 240, 4, 128)
-    
-    a1 = Conv2D(256, (3, 3), padding="same", activation="relu", use_bias=True)(a1)
-    a1 = MaxPooling2D(pool_size=(1, 4))(a1) # (N, 240, 1, 256)
-    
+    a1 = MaxPooling2D(pool_size=(1,2))(a1) # (N, 240, 32, 128)
+    kr(a1)
+    a2 = block(a1)
+    a2 = block(a2)
+    a2 = MaxPooling2D(pool_size=(1,2))(a2) # (N, 240, 16, 128)
+    kr(a2)    
+    a3 = block(a2)
+    a3 = block(a3)
+    a3 = MaxPooling2D(pool_size=(1,2))(a3) # (N, 240, 8, 128)
+    kr(a3)    
+    a4 = block(a3)
+    a4 = block(a4)
+    a4 = MaxPooling2D(pool_size=(1,2))(a4) # (N, 240, 4, 128)
+    kr(a4)
+    a5 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a4)
+    a5 = MaxPooling2D(pool_size=(1,2))(a5) # (N, 240, 1, 256)
+    kr(a5)    
 #    x=Permute((2,3,1))(a1)
-    a,b,c,d=kr(x)
-    a1 = Reshape((b*c,d))(x) # (N, 240, 256)
-    
+    a,b,c,d=kr(a5)
+    a6 = Reshape((c*d,b))(a5) # (N, 240, 256)
+    kr(a6)
     # Gated BGRU
-    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(a1)
-    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(a1)
-    a2 = Multiply()([rnnout, rnnout_gate])
-    
+    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(a6)
+    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(a6)
+    a7 = Multiply()([rnnout, rnnout_gate])
+    kr(a7)
     # Attention
-    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a2)
-    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a2)
+    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a7)
+    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a7)
     out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
-    
-    model = Model(input_logmel, out)
+    kr(out)    
+    model = Model([input_logmel], out)
     model.summary()
     
     # Compile model
@@ -332,8 +334,224 @@ def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,
     
     return model 
 
-def tcnn():
-    print "aditya"
+def ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+    print "ACRNN"
+    input_logmel = Input(shape=(1,dimx,dimy))
+    a1 = block(input_logmel)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1,2))(a1) # (N, 240, 32, 128)
+    kr(a1)
+    a2 = block(a1)
+    a2 = block(a2)
+    a2 = MaxPooling2D(pool_size=(1,2))(a2) # (N, 240, 16, 128)
+    kr(a2)    
+    a3 = block(a2)
+    a3 = block(a3)
+    a3 = MaxPooling2D(pool_size=(1,2))(a3) # (N, 240, 8, 128)
+    kr(a3)    
+    a4 = block(a3)
+    a4 = block(a4)
+    a4 = MaxPooling2D(pool_size=(1,2))(a4) # (N, 240, 4, 128)
+    kr(a4)
+    a5 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a4)
+    a5 = MaxPooling2D(pool_size=(1,2))(a5) # (N, 240, 1, 256)
+    kr(a5)    
+    a,b,c,d=kr(a5)
+    a6 = Reshape((c*d,b))(a5) # (N, 240, 256)
+    kr(a6)
+    # Gated BGRU
+    rnnout = Bidirectional(GRU(128, activation='relu', return_sequences=True))(a6)
+    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(a6)
+    a7 = Multiply()([rnnout, rnnout_gate])
+    kr(a7)
+    # Attention
+    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a7)
+    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a7)
+    out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
+    kr(out)    
+    mymodel = Model([input_logmel], out)
+    mymodel.summary()
+    
+    #opt=optimizers.Adam(1e-3)
+    # Compile model
+    mymodel.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['mse'])
+    
+    return mymodel 
+
+def multi_ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+    print "ACRNN"
+    ###################################
+    feat0 = Input(shape=(1,dimx,dimy[0]))
+    a01 = block(feat0)
+    a01 = block(a01)
+    a01 = MaxPooling2D(pool_size=(1,2))(a01) # (N, 240, 32, 128)
+    kr(a01)
+    a02 = block(a01)
+    a02 = block(a02)
+    a02 = MaxPooling2D(pool_size=(1,2))(a02) # (N, 240, 16, 128)
+    kr(a02)    
+    a03 = block(a02)
+    a03 = block(a03)
+    a03 = MaxPooling2D(pool_size=(1,2))(a03) # (N, 240, 8, 128)
+    kr(a03)    
+    a04 = block(a03)
+    a04 = block(a04)
+    a04 = MaxPooling2D(pool_size=(1,2))(a04) # (N, 240, 4, 128)
+    kr(a04)
+    a05 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a04)
+    a05 = MaxPooling2D(pool_size=(1,2))(a05) # (N, 240, 1, 256)
+    kr(a05)    
+    a,b,c,d=kr(a05)
+    a06 = Reshape((c*d,b))(a05) # (N, 240, 256)
+    kr(a06)
+    ###################################
+    feat1 = Input(shape=(1,dimx,dimy[1]))
+    a1 = block(feat1)
+    a1 = block(a1)
+    a1 = MaxPooling2D(pool_size=(1,2))(a1) # (N, 240, 32, 128)
+    kr(a1)
+    a2 = block(a1)
+    a2 = block(a2)
+    a2 = MaxPooling2D(pool_size=(1,2))(a2) # (N, 240, 16, 128)
+    kr(a2)    
+    a3 = block(a2)
+    a3 = block(a3)
+    a3 = MaxPooling2D(pool_size=(1,2))(a3) # (N, 240, 8, 128)
+    kr(a3)    
+    a4 = block(a3)
+    a4 = block(a4)
+    a4 = MaxPooling2D(pool_size=(1,2))(a4) # (N, 240, 4, 128)
+    kr(a4)
+    a5 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a4)
+    a5 = MaxPooling2D(pool_size=(1,4))(a5) # (N, 240, 1, 256)
+    kr(a5)    
+    a,b,c,d=kr(a5)
+    a6 = Reshape((c*d,b))(a5) # (N, 240, 256)
+    kr(a6)
+    ##############################################
+    combine = Merge(mode='concat')([a06,a6])
+    ##############################################
+    # Gated BGRU
+    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(combine)
+    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(combine)
+    a7 = Multiply()([rnnout, rnnout_gate])
+    kr(a7)
+    # Attention
+    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a7)
+    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a7)
+    out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
+    kr(out)    
+    mymodel = Model([feat0,feat1], out)
+    mymodel.summary()
+    
+    opt=optimizers.Adam(1e-3)
+    # Compile model
+    mymodel.compile(loss='binary_crossentropy',
+                  optimizer=opt,
+                  metrics=['accuracy'])
+    
+    return mymodel 
+
+############################ Transpose CNN ################################
+def transpose_cnn(input_neurons,dimx,dimy,nb_filter,
+                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
+    # First section contains convolutional neural network with same structure as cnn.
+    # Please check the size parameter for model
+    #acoustic event detection
+    #Deconv layer will be after conv layer to maintain the same shape.
+    # The last layer will be a conv layer to calculate class wise score
+    # Refer this : https://www.programcreek.com/python/example/89672/keras.layers.Conv2DTranspose
+    # Refer this: https://github.com/keras-team/keras/blob/master/examples/variational_autoencoder_deconv.py
+    inpx = Input(shape=(1,dimx,dimy),name='inpx')
+    
+    x = Conv2D(filters=50,
+               kernel_size=(dimy,4),
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(inpx)
+
+    hx = MaxPooling2D(pool_size=(4,1))(x)
+    hx = ZeroPadding2D(padding=(2, 1))(hx)
+    x = Conv2D(filters=100,
+               kernel_size=(4,1),
+               data_format='channels_first',
+               padding='same',
+               activation='sigmoid')(hx)
+
+   
+# In this section we apply the concept of transposed convolutional neural network for the task
+# of event detection, deconv will work with tensorflow 
+    print kr(x)
+    x=Conv2DTranspose(filters=100, kernel_size=(4,1),padding='same', data_format='channels_first',activation='relu')(x)
+    hx = MaxPooling2D(pool_size=(4,1))(x)
+    x=Conv2DTranspose(filters=50, kernel_size=(4,1),padding='same', data_format='channels_first',activation='sigmoid')(hx)
+    hx = MaxPooling2D(pool_size=(4,1))(x)
+    
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='softmax')(hx)
+# Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    kr(score)
+#    h=Flatten()(score)
+#    score=Dense(num_classes,activation='softmax')(h)
+    model = Model([inpx],score)
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adadelta',
+			  metrics=['accuracy'])
+  
+    return model
+
+#####################Sequence2Sequence Model ############################
+
+def seq2seq_lstm(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
+    # Recurrent sequence to sequence learning auto encoders for audio classification task
+    
+    
+    print "seq2seq_lstm"
+    
+    ## encoder
+    encoder_input = Input(shape=(dimx,dimy))
+    encoder=Bidirectional(LSTM(32,return_state=True),merge_mode="mul")# Returns list of nos. of output states
+    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_input)
+    state_h = Concatenate()([forward_h, backward_h])
+    state_c = Concatenate()([forward_c, backward_c])
+    encoder_states = [state_h, state_c]
+    
+#    a,b = kr(encoder_outputs)
+#    x = Reshape((b,1))(encoder_outputs)
+    
+    
+    ## decoder
+    decoder_input = Input(shape=(dimx,dimy), name='main_input')
+    decoder_lstm = LSTM(64, return_sequences=True, return_state=True)
+    decoder_outputs, _, _ = decoder_lstm(decoder_input,
+                                         initial_state=encoder_states)
+    #h=Flatten()(decoder_outputs)
+    decoder_dense = Dense(num_classes, activation='softmax')(decoder_outputs)
+    model = Model([encoder_input, decoder_input], decoder_dense)
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adam',
+			  metrics=['accuracy'])
+
+    ## encoder model 
+    encoder_model = Model(encoder_input, encoder_states)
+    
+    ##decoder model
+    
+    decoder_state_input_h = Input(shape=(64,))
+    decoder_state_input_c = Input(shape=(64,))
+    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+    decoder_outputs, state_h, state_c = decoder_lstm(
+    decoder_input, initial_state=decoder_states_inputs)
+    decoder_states = [state_h, state_c]
+    decoder_outputs = decoder_dense(decoder_outputs)
+    decoder_model = Model( [decoder_input] + decoder_states_inputs,[decoder_outputs] + decoder_states)
+  
+    return model, encoder_model, decoder_model 
+
 
 ########################################### DYNAMIC MODELS ###########################################
 """
@@ -501,132 +719,4 @@ def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
     
     return model
 
-#############################  model.conv_deconv #################################
 
-
-
-
-def multi_cnn(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
-    # Combine different features and model according to their theoritical properties.
-    # For basic, we have combined mel+ cnn & cqt +cnn in parallel
-    # mini Ensemble model
-    inps,outs=[],[]
-    for i in range(len(dimy)):
-        inpx = Input(shape=(1,dimx,dimy[i]))
-        inps.append(inpx)
-        x = Conv2D(filters=nb_filter,
-                   kernel_size=filter_length,
-                   data_format='channels_first',
-                   padding='same',
-                   activation=act1)(inpx)
-        x = MaxPooling2D(pool_size=pool_size)(x)
-        x= Dropout(dropout)(x)
-        h = Flatten()(x)
-        outs.append(h)
-
-        
-    
-    combine = Merge(mode='concat')(outs) 
-    # And finally we add the main logistic regression layer    
-    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
-    main_output = Dense(num_classes,activation=act3,name='score')(wrap)
-    
-    model = Model(inputs=inps,outputs=main_output)
-    ################################################
-    model.summary()
-    model.compile(loss='categorical_crossentropy',
-			  optimizer='adadelta',
-			  metrics=['accuracy'])
-    
-    
-    return model
-
-#############################  model.TCNN #################################
-
-def sampling(args):
-    epsilon_std = 1.0
-    latent_dim = 2
-    z_mean, z_log_var = args
-    epsilon = K.random_normal(shape=(K.shape(z_mean)[0], latent_dim),
-                              mean=0., stddev=epsilon_std)
-    return z_mean + K.exp(z_log_var) * epsilon
-
-def transpose_cnn(dimx,dimy,nb_filter,filter_length,num_classes,pool_size=(3,3),dropout=0.1):
-    """
-    First section contains CNN.
-    Deconv layer will be after conv layer to maintain the same shape.
-    The last layer will be a conv layer to calculate class wise score
-    """
-    nb_filter = 64
-    num_conv = 3
-    intermediate_dim = 128
-    latent_dim = 2
-    batch_size = 100
-    inpx = Input(shape=(1,dimx,dimy),name='inpx')
-    
-    conv_1 = Conv2D(filters=1,
-               kernel_size=(2,2),
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(inpx)
-
-    conv_2 = Conv2D(filters=nb_filter,
-               kernel_size=(2,2),
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(conv_1)
-
-    conv_3 = Conv2D(filters=nb_filter,
-               kernel_size=num_conv,
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(conv_2)
-
-    conv_4 = Conv2D(filters=nb_filter,
-               kernel_size=num_conv,
-               data_format='channels_first',
-               padding='same',
-               activation='relu')(conv_3)
-    
-    flat = Flatten()(conv_4)
-    hidden = Dense(intermediate_dim, activation='relu')(flat)
-
-    z_mean = Dense(latent_dim)(hidden)
-    z_log_var = Dense(latent_dim)(hidden)
-
-    z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
-
-    # we instantiate these layers separately so as to reuse them later
-    decoder_hid = Dense(intermediate_dim, activation='relu')
-    decoder_upsample = Dense(nb_filter * dimx * dimy, activation='relu')
-
-    output_shape = (batch_size, nb_filter, dimx, dimy)
-    
-    decoder_reshape = Reshape(output_shape[1:])
-    decoder_deconv_1 = Conv2DTranspose(filters,
-                                   kernel_size=num_conv,
-                                   padding='same',
-                                   strides=1,
-                                   activation='relu')
-    decoder_deconv_2 = Conv2DTranspose(filters,
-                                   kernel_size=num_conv,
-                                   padding='same',
-                                   strides=1,
-                                   activation='relu')
-    output_shape = (batch_size, filters, 29, 29)
-# In this section we apply the concept of transposed convolutional neural network for the task
-# of event detection, deconv will work with tensorflow 
-    print kr(x)
-    x=Conv2DTranspose(filters=nb_filter,padding='same', data_format='channels_first',activation='relu')(x)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    x=Conv2DTranspose(filters=nb_filter, kernel_size=256,strides=(4,1),padding='same', data_format='channels_first',activation='relu')(hx)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    
-    score=Conv2D(filters=num_classes, kernel_size=256,padding='same', data_format='channels_first',activation='sigmoid')(hx)
-# Check for compiling    
-    model = Model([inpx],score)
-    model.compile(loss='categorical_crossentropy',
-			  optimizer='adadelta',
-			  metrics=['accuracy'])
-  
-    return model

@@ -41,20 +41,20 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='ACRNN'               # Name of model
-feature="logmel"          # Name of feature
+model='MultiACRNN'               # Name of model
+feature=["logmel","mel"]          # Name of feature
 
 dropout1=0.25          # 1st Dropout
 act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
-input_neurons=800      # Number of Neurons
-epochs=20             # Number of Epochs
-batchsize=128        # Batch Size
+input_neurons=400      # Number of Neurons
+epochs=5             # Number of Epochs
+batchsize=128          # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=5      # Size of Filter
-nb_filter=128         # Number of Filters
+nb_filter=100         # Number of Filters
 #Parameters that are passed to the features.
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
@@ -72,8 +72,8 @@ print "Number of filters",nb_filter
 
 ## EXTRACT FEATURES
 
-#aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
-#aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
+#aud_audio.extract('mel', wav_dev_fd, dev_fd+'/mel','defaults.yaml',dataset='chime_2016')
+#aud_audio.extract('mel', wav_eva_fd, eva_fd+'/mel','defaults.yaml',dataset='chime_2016')
 
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
@@ -163,15 +163,24 @@ def test(md,csv_file,model):
 
 
 
-tr_X, tr_y = GetAllData( dev_fd+'/'+feature, meta_train_csv, agg_num, hop )
+tr_X = list(np.zeros(len(feature),dtype='int'))
+dimy = list(np.zeros(len(feature),dtype='int'))
+for i in range(len(feature)):
+    tr_X[i], tr_y = GetAllData( dev_fd+'/'+feature[i], meta_train_csv, agg_num, hop )
+    print(tr_X[i].shape)
 
-print(tr_X.shape)
 print(tr_y.shape)    
-    
-tr_X=aud_utils.mat_3d_to_nd(model,tr_X)
-print(tr_X.shape)
-dimx=tr_X.shape[-2]
-dimy=tr_X.shape[-1]
+
+for i in range(len(feature)):
+    dimy[i]=tr_X[i].shape[-1]
+    #aud_utils.check_dimension(feature[i],dimy[i],'defaults.yaml')
+
+#tr_X=aud_utils.equalise(tr_X)
+
+for i in range(len(feature)):
+    tr_X[i]=aud_utils.mat_3d_to_nd(model,tr_X[i])
+    print(tr_X[i].shape)
+dimx=tr_X[0].shape[-2]
 
 if prep=='dev':
     print "Number of folds",folds
@@ -223,7 +232,7 @@ if cross_validation:
         print "Unique in test_y",jj
     print "Results: " + str( np.array(results).mean() )
 else:
-    train_x=np.array(tr_X)
+    train_x=tr_X
     train_y=np.array(tr_y)
     print "Evaluation mode"
     lrmodel=miz.prepare_model()
@@ -236,4 +245,3 @@ else:
 
     eer=aud_utils.calculate_eer(truth,pred)
     print "EER %.2f"%eer
-
