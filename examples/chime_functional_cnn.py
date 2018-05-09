@@ -41,7 +41,7 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='ACRNN'               # Name of model
+model='TCNN'               # Name of model
 feature="logmel"          # Name of feature
 
 dropout1=0.25          # 1st Dropout

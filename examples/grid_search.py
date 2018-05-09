@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 17 03:37:44 2018
+Created on Tue May 08 20:37:15 2018
 
-@author: adityac8
+@author: akshitac8
 """
 
 import warnings
@@ -23,6 +23,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import KFold
 from keras.utils import to_categorical
 from keras.models import load_model
+from sklearn.model_selection import GridSearchCV
+from keras.wrappers.scikit_learn import KerasClassifier
 
 # This is where all audio files reside and features will be extracted
 audio_ftr_path='E:/akshita_workspace/git_x'
@@ -67,6 +69,42 @@ nb_filter=100          # Number of Filters
 #Parameters that are passed to the features.
 agg_num=10             # Agg Number(Integer) Number of frames
 hop=10                 # Hop Length(Integer)
+
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+def seq_cnn():
+    md=Sequential()
+    md.add(Conv2D(input_shape=(1,dimx,dimy),filters=nb_filter,kernel_size=filter_length,data_format='channels_first',padding='same',activation=act1))
+
+    md.add(MaxPooling2D(pool_size=(2,2)))
+    md.add(Flatten())
+    md.add(Dense(input_neurons, activation=act2,name='wrap'))
+    md.add(Dropout(0.1))
+    md.add(Dense(num_classes,activation=act3,name='score'))
+    
+    md.compile(loss='categorical_crossentropy',
+          optimizer='adam',
+          metrics=['accuracy'])
+    return md
+
+from keras.models import Model
+from keras.layers import Input
+def func_cnn():
+    inpx = Input(shape=(1,dimx,dimy))
+    x=Conv2D(filters=nb_filter,kernel_size=filter_length,data_format='channels_first',padding='same',activation=act1)(inpx)
+
+    x=MaxPooling2D(pool_size=(2,2))(x)
+    x=Flatten()(x)
+    x=Dense(input_neurons, activation=act2,name='wrap')(x)
+    x=Dropout(0.1)(x)
+    score=Dense(num_classes,activation=act3,name='score')(x)
+    md = Model([inpx],score)
+
+    md.compile(loss='categorical_crossentropy',
+          optimizer='adam',
+          metrics=['accuracy'])
+    return md
 
 def GetAllData(fe_fd, csv_file):
     """
@@ -173,54 +211,23 @@ miz=aud_model.Functional_Model(input_neurons=input_neurons,cross_validation=cros
     model=model,dimx=dimx,dimy=dimy)
 
 np.random.seed(68)
-if cross_validation:
-    kf = KFold(len(tr_X),folds,shuffle=True,random_state=42)
-    results=[]    
-    for train_indices, test_indices in kf:
-        train_x = [tr_X[ii] for ii in train_indices]
-        train_y = [tr_y[ii] for ii in train_indices]
-        test_x  = [tr_X[ii] for ii in test_indices]
-        test_y  = [tr_y[ii] for ii in test_indices]
-        train_y = to_categorical(train_y,num_classes=len(labels))
-        test_y = to_categorical(test_y,num_classes=len(labels)) 
-        
-        train_x=np.array(train_x)
-        train_y=np.array(train_y)
-        test_x=np.array(test_x)
-        test_y=np.array(test_y)
-        print "Development Mode"
+bre
+lrmodel = KerasClassifier(build_fn=func_cnn, verbose=1)
 
-        #get compiled model
-        lrmodel=miz.prepare_model()
+train_x=np.array(tr_X)
+train_y=np.array(tr_y)
+train_y = to_categorical(train_y,num_classes=len(labels))
 
-        if lrmodel is None:
-            print "If you have used Dynamic Model, make sure you pass correct parameters"
-            raise SystemExit
-        #fit the model
-        lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
-        
-        #make prediction
-        pred=lrmodel.predict(test_x, batch_size=32)
-
-        pred = [ii.argmax()for ii in pred]
-        test_y = [ii.argmax()for ii in test_y]
-
-        results.append(accuracy_score(pred,test_y))
-        print accuracy_score(pred,test_y)
-        jj=str(set(list(test_y)))
-        print "Unique in test_y",jj
-    print "Results: " + str( np.array(results).mean() )
-else:
-    train_x=np.array(tr_X)
-    train_y=np.array(tr_y)
-    print "Evaluation mode"
-    lrmodel=miz.prepare_model()
-    train_y = to_categorical(train_y,num_classes=len(labels))
-        
-    #fit the model
-    lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
-    
-    truth,pred=test(lrmodel,txt_eva_path)
-
-    acc=aud_utils.calculate_accuracy(truth,pred)
-    print "Accuracy %.2f prcnt"%acc
+# define the grid search parameters
+batch_size = [10, 20]
+epochs = [10, 20]
+param_grid = dict(batch_size=batch_size, epochs=epochs)
+grid = GridSearchCV(estimator=lrmodel, param_grid=param_grid, n_jobs=-1)
+grid_result = grid.fit(train_x,train_y)
+# summarize results
+print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+means = grid_result.cv_results_['mean_test_score']
+stds = grid_result.cv_results_['std_test_score']
+params = grid_result.cv_results_['params']
+for mean, stdev, param in zip(means, stds, params):
+    print("%f (%f) with: %r" % (mean, stdev, param))

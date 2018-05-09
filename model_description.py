@@ -52,7 +52,7 @@ def dnn(input_neurons,input_dim,dropout,num_classes,act1=None,act2=None,act3=Non
 ########################### BASIC CNN #################################
 
 def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
-                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None):
+                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None,dataset=None):
     print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
     print "Model CNN"
     inpx = Input(shape=(1,dimx,dimy),name='inpx')
@@ -70,7 +70,12 @@ def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
     score = Dense(num_classes,activation=act3,name='score')(wrap)
     
     model = Model([inpx],score)
-    model.compile(loss='categorical_crossentropy',
+    if dataset is None:
+        model.compile(loss='categorical_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+    elif dataset =='chime2016':
+        model.compile(loss='binary_crossentropy',
               optimizer='adam',
               metrics=['mse'])
     
@@ -455,52 +460,87 @@ def multi_ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1
     return mymodel 
 
 ############################ Transpose CNN ################################
-def transpose_cnn(input_neurons,dimx,dimy,nb_filter,
-                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
-    # First section contains convolutional neural network with same structure as cnn.
-    # Please check the size parameter for model
-    #acoustic event detection
-    #Deconv layer will be after conv layer to maintain the same shape.
-    # The last layer will be a conv layer to calculate class wise score
-    # Refer this : https://www.programcreek.com/python/example/89672/keras.layers.Conv2DTranspose
-    # Refer this: https://github.com/keras-team/keras/blob/master/examples/variational_autoencoder_deconv.py
+from keras.layers import concatenate
+def transpose_cnn(dimx,dimy,nb_filter,num_classes,
+                         filter_length=None,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
+    """
+    The first section of the neural network contains conv layers.
+    The deconv layer after conv layer maintains the same shape.
+    The last layer will be a conv layer to calculate class wise score.
+    Emphasis is given to check the size parameter for model.
+    This is used for acoustic event detection.
+    """
     inpx = Input(shape=(1,dimx,dimy),name='inpx')
+    x = Conv2D(filters=100,
+               kernel_size=5,
+               data_format='channels_first',
+               padding='same',
+               activation='tanh')(inpx)
+
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    x=Conv2DTranspose(filters=100, kernel_size=5,padding='same', data_format='channels_first',activation='tanh')(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    # Don't use softmax in last layer
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='sigmoid')(hx)
+    # Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    kr(score)
     
-    x = Conv2D(filters=50,
-               kernel_size=(dimy,4),
+    """
+    x = Conv2D(filters=1,
+#               kernel_size=(dimy,4),
+               kernel_size=(3,1),
                data_format='channels_first',
                padding='same',
                activation='relu')(inpx)
 
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    hx = ZeroPadding2D(padding=(2, 1))(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    #hx = ZeroPadding2D(padding=(2, 1))(hx)
     x = Conv2D(filters=100,
-               kernel_size=(4,1),
+               kernel_size=(3,1),
                data_format='channels_first',
                padding='same',
                activation='sigmoid')(hx)
-
    
-# In this section we apply the concept of transposed convolutional neural network for the task
-# of event detection, deconv will work with tensorflow 
+    # We apply the concept of transposed convolutional neural network for the task
     print kr(x)
-    x=Conv2DTranspose(filters=100, kernel_size=(4,1),padding='same', data_format='channels_first',activation='relu')(x)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
-    x=Conv2DTranspose(filters=50, kernel_size=(4,1),padding='same', data_format='channels_first',activation='sigmoid')(hx)
-    hx = MaxPooling2D(pool_size=(4,1))(x)
+    x=Conv2DTranspose(filters=100, kernel_size=(3,1),padding='same', data_format='channels_first',activation='sigmoid')(x)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    x=Conv2DTranspose(filters=50, kernel_size=(3,1),padding='same', data_format='channels_first',activation='relu')(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
     
     score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='softmax')(hx)
-# Check for compiling    
+    # Check for compiling    
     score=GlobalAveragePooling2D(data_format='channels_first')(score)
     kr(score)
-#    h=Flatten()(score)
-#    score=Dense(num_classes,activation='softmax')(h)
-    model = Model([inpx],score)
+    # h=Flatten()(score)
+    # score=Dense(num_classes,activation='softmax')(h)
+    """
+    """
+    conv_1 = Conv2D(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(inpx)
+    act_1 = Activation('relu')(conv_1)
+    
+    conv_2 = Conv2D(64, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(act_1)
+    act_2 = Activation('relu')(conv_2)
+
+    deconv_1 = Conv2DTranspose(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(act_2)
+    act_3 = Activation('relu')(deconv_1)
+
+    merge_1 = concatenate([act_3, act_1], axis=3)
+
+    deconv_2 = Conv2DTranspose(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(merge_1)
+    act_4 = Activation('relu')(deconv_2)
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='softmax')(act_4)
+    # Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    score = Dense(num_classes, activation='sigmoid')(score)
+    """
+    model = Model(inputs=[inpx], outputs=[score])
     model.summary()
     model.compile(loss='categorical_crossentropy',
 			  optimizer='adadelta',
 			  metrics=['accuracy'])
-  
+
     return model
 
 #####################Sequence2Sequence Model ############################

@@ -11,11 +11,11 @@ warnings.simplefilter("ignore")
 
 # Clone the keras_aud library and place the path in ka_path variable
 import sys
-ka_path="e:/akshita_workspace/cc"
+ka_path="e:/akshita_workspace/git_x"
 sys.path.insert(0, ka_path)
 from keras_aud import aud_feature
 
-wavs_file = 'E:/akshita_workspace/cc/dcase_data/audio/dev/a001_0_30.wav'
+wavs_file = 'E:/akshita_workspace/git_x/dcase_data/audio/dev/a001_0_30.wav'
 
 X=aud_feature.extract_one(feature_name = 'logmel', wav_file = wavs_file, yaml_file = 'dcase.yaml', dataset = 'dcase_2016')
 print X
