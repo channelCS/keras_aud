@@ -1,51 +1,43 @@
 # Keras Audio Library
 [![license](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://github.com/channelCS/keras_aud/blob/master/LICENSE) [![dep1](https://img.shields.io/badge/Theano-0.9+-blue.svg)](http://deeplearning.net/software/theano/) [![dep2](https://img.shields.io/badge/Keras-2.1+-blue.svg)](https://keras.io/) 
 
-Neural networks audio toolkit for Keras
+Neural networks audio toolkit for Keras.
 
+## Running the library
+Clone the repo using 
+```
+git clone https://github.com/akshitac8/keras_aud.git
+```
+and add the **path** in `ka_path`. 
+
+```
 import sys
-ka_path="e:/akshita_workspace/cc"
+ka_path="path/to/keras_aud"
 sys.path.insert(0, ka_path)
+```
+## Extracting audio features
+We can extract a variety of features. See features list.
+
+```
 from keras_aud import aud_audio
+aud_audio.extract(feature_name, 'path/to/wavs', 'desired/features/path','yaml_file')
+```
+## Making a functional model
 
-### Useful Path Definitions:
-
-| Variable        | Description                     |
-| :-------------  |:-------------                   |
-| `wav_dev_fd`    | Development audio folder        |
-| `wav_eva_fd`    | Evaluation audio folder         |
-| `dev_fd`        | Development features folder     |
-| `eva_fd`        | Evaluation features folder      |
-
-aud_audio.extract('logmel', wav_dev_fd, dev_fd,'example.yaml')
-aud_audio.extract('logmel', wav_eva_fd, eva_fd,'example.yaml')
-
+We shall now make a functional CNN `model='CNN'` model in which we pass `train_x` having shape as `(batch_size,1,dimx,dimy)` and `train_y` with shape as `(batch_size,num_classes)`. The model contains `nb_filter = 100, filter_length=5`. Three activations are used `act1='relu',act2='relu'`. Each layer is followed by a `dropout1=0.1`. We then add a dense layer with `act3='sigmoid', input_neurons=400` and another having `output shape=num_classes`in the end.
+```
 from keras_aud import aud_model
+miz=aud_model.Functional_Model(model='CNN',input_neurons=400,dropout1=0.1,
+    act1='relu',act2='relu',act3=act3,nb_filter = 100, filter_length=5,
+    num_classes=15,dimx=10,dimy=40)
 
-### Model and Feature Parameters
+```
 
-| Variable           | Description              | type       | Accepted values             |
-| :-------------     | :-------------           | :--------- | :---------                  |
-| `prep`             | mode to use              | `str`      | dev, eval                   |
-| `save_model`       | Whether to save model    | `bool`     |                             |
-| `model_type`       | Type of model            | `str`      | Dynamic, Functional, Static |
-| `model`            | Name of model            | `str`      | DNN, CNN, CRNN, RNN, FCRNN  |
-| `modelx`           | Name of model for saving | `str`      | Should end with `.h5`       |
-| `feature`          | Name of feature          | `str`      | mel, logmel, cqt, mfcc, zcr |
-| **Works only for Functional** | | | |
-| `dropout1`         | 1st Dropout              | `float`    |                             |
-| `act1`             | 1st Activation           | `str`      |                             |
-| `act2`             | 2nd Activation           | `str`      |                             |
-| `act3`             | 3rd Activation           | `str`      |                             |
-| `act4`             | 4th Activation           | `str`      | Only in case of DNN         |
-| **Works for all Models** | | | |
-| `input_neurons`    | Number of Neurons        | `int`      |                             |
-| `epochs`           | Number of Epochs         | `int`      |                             |
-| `batchsize`        | Batch Size               | `int`      |                             |
-| `num_classes`      | Number of classes        | `int`      |                             |
-| `filter_length`    | Size of Filter           | `int`      |                             |
-| `nb_filter`        | Number of Filters        | `int`      |                             |
-| **Feature Parameters** | | | |
-| `agg_num`          | Number of frames         | `int`      |                             |
-| `hop`              | Hop Length               | `int`      |                             |
-| `custom_check_ftr` | check for dimensions     | `bool`     | True: know dimension        |
+This returns us a **class** object. We can then `compile` the model using
+
+```
+lrmodel=miz.prepare_model()
+lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=1)
+```
+
+This model can be used for making predictions.
