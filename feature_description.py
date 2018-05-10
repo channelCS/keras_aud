@@ -119,7 +119,7 @@ def logmel(features,path,dataset=None):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    wav, fs = read_audio('librosa',path,dataset)
+    wav, fs = read_audio('librosa',path,'dcase_2016')
     #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -154,9 +154,10 @@ def cqt(features,path):
     bins_per_octave = features['bins_per_octave'][0]
     window = features['window'][0]
     mono=features['mono'][0]
-    wav, fs, enc = read_audio('wavread',path)
+    wav, fs = read_audio('wavread',path)
     wav=convert_mono(wav,mono)
-    assert fs==fsx
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     X=librosa.cqt(y=wav, hop_length=hop_length,sr=fs, n_bins=n_bins, bins_per_octave=bins_per_octave,window=window)
     X=X.T
     X=np.abs(np.log10(X))
