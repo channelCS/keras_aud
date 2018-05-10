@@ -1,116 +1,76 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 08 20:37:15 2018
+Created on Tue May 08 17:13:52 2018
 
-@author: akshitac8
+@author: adityac8
 """
 
+# Suppress warnings
 import warnings
 warnings.simplefilter("ignore")
 
+# Clone the keras_aud library and place the path in ka_path variable
 import sys
-ka_path="../.."
+ka_path="e:/akshita_workspace/git_x"
 sys.path.insert(0, ka_path)
-from keras_aud import aud_audio, aud_feature
-from keras_aud import aud_model, aud_utils
+from keras_aud import aud_audio, aud_model, aud_utils
 
+# Make imports
 import csv
 import cPickle
 import numpy as np
 import scipy
-import time
 from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import KFold
 from keras.utils import to_categorical
-from keras.models import load_model
-from sklearn.model_selection import GridSearchCV
-from keras.wrappers.scikit_learn import KerasClassifier
 
 # This is where all audio files reside and features will be extracted
 audio_ftr_path='E:/akshita_workspace/git_x'
-
+util_path='E:/akshita_workspace/git_x/Summaries'
 # We now tell the paths for audio, features and texts.
 wav_dev_fd   = audio_ftr_path+'/dcase_data/audio/dev'
 wav_eva_fd   = audio_ftr_path+'/dcase_data/audio/eva'
 dev_fd       = audio_ftr_path+'/dcase_data/features/dev'
 eva_fd       = audio_ftr_path+'/dcase_data/features/eva'
-label_csv    = audio_ftr_path+'/Summaries/utils/dcase_data/texts/dev/meta.txt'
-txt_eva_path = audio_ftr_path+'/Summaries/utils/dcase_data/texts/eva/test.txt'
-new_p        = audio_ftr_path+'/Summaries/utils/dcase_data/texts/eva/evaluate.txt'
-
-#aud_audio.extract('logmel', wav_dev_fd, dev_fd,'example.yaml')
-#aud_audio.extract('logmel', wav_eva_fd, eva_fd,'example.yaml')
+label_csv    = util_path+'/utils/dcase_data/texts/dev/meta.txt'
+txt_eva_path = util_path+'/utils/dcase_data/texts/eva/test.txt'
+new_p        = util_path+'/utils/dcase_data/texts/eva/evaluate.txt'
 
 labels = [ 'bus', 'cafe/restaurant', 'car', 'city_center', 'forest_path', 'grocery_store', 'home', 'beach', 
             'library', 'metro_station', 'office', 'residential_area', 'train', 'tram', 'park' ]
-lb_to_id = { lb:id for id, lb in enumerate(labels) }
-id_to_lb = { id:lb for id, lb in enumerate(labels) }
+lb_to_id = {lb:id for id, lb in enumerate(labels)}
+id_to_lb = {id:lb for id, lb in enumerate(labels)}
 
-
-
-prep='eval'               # Which mode to use
+# We define all model parameters here.
+prep='eval'               # dev or eval
 folds=4                   # Number of folds
-#Parameters that are passed to the model.
-model_type='Functional'   # Type of model
-model='CNN'               # Name of model
+save_model=False          # True if we want to save model
+model_type='Functional'   # Can be Dynamic or Functional
+model='DNN'               # Name of model
 feature="logmel"          # Name of feature
 
-dropout1=0.1             # 1st Dropout
-act1='relu'              # 1st Activation
-act2='sigmoid'              # 2nd Activation
-act3='softmax'           # 3rd Activation
+dropout1=0.2              # 1st Dropout
+act1='relu'               # 1st Activation
+act2='relu'               # 2nd Activation
+act3='sigmoid'            # 3rd Activation
 
-input_neurons=400      # Number of Neurons
-epochs=10              # Number of Epochs
-batchsize=128          # Batch Size
-num_classes=15         # Number of classes
-filter_length=3        # Size of Filter
-nb_filter=100          # Number of Filters
-#Parameters that are passed to the features.
-agg_num=10             # Agg Number(Integer) Number of frames
-hop=10                 # Hop Length(Integer)
+input_neurons=200         # Number of Neurons
+epochs=100                 # Number of Epochs
+batchsize=100              # Batch Size
+num_classes=15            # Number of classes
 
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-def seq_cnn():
-    md=Sequential()
-    md.add(Conv2D(input_shape=(1,dimx,dimy),filters=nb_filter,kernel_size=filter_length,data_format='channels_first',padding='same',activation=act1))
+agg_num=10                # Number of frames
+hop=10                    # Hop Length
 
-    md.add(MaxPooling2D(pool_size=(2,2)))
-    md.add(Flatten())
-    md.add(Dense(input_neurons, activation=act2,name='wrap'))
-    md.add(Dropout(0.1))
-    md.add(Dense(num_classes,activation=act3,name='score'))
-    
-    md.compile(loss='categorical_crossentropy',
-          optimizer='adam',
-          metrics=['accuracy'])
-    return md
-
-from keras.models import Model
-from keras.layers import Input
-def func_cnn():
-    inpx = Input(shape=(1,dimx,dimy))
-    x=Conv2D(filters=nb_filter,kernel_size=filter_length,data_format='channels_first',padding='same',activation=act1)(inpx)
-
-    x=MaxPooling2D(pool_size=(2,2))(x)
-    x=Flatten()(x)
-    x=Dense(input_neurons, activation=act2,name='wrap')(x)
-    x=Dropout(0.1)(x)
-    score=Dense(num_classes,activation=act3,name='score')(x)
-    md = Model([inpx],score)
-
-    md.compile(loss='categorical_crossentropy',
-          optimizer='adam',
-          metrics=['accuracy'])
-    return md
+#We extract audio features
+#aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'example.yaml',dataset = 'dcase_2016')
+#aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'example.yaml',dataset = 'dcase_2016')  
 
 def GetAllData(fe_fd, csv_file):
     """
-    Input: Features folder(String), CSV file(String), agg_num(Integer), hop(Integer).
-    Output: Loaded features(Numpy Array) and labels(Numpy Array).
     Loads all the features saved as pickle files.
+    Input: Features folder(str), CSV file(str)
+    Output: Loaded features(np array) and labels(np array).
     """
     # read csv
     with open( csv_file, 'rb') as f:
@@ -144,8 +104,6 @@ def GetAllData(fe_fd, csv_file):
     y_all = np.array( y_all )
     
     return X3d_all, y_all
-
-
 
 def test(md,csv_file):
     # load name of wavs to be classified
@@ -188,9 +146,7 @@ def test(md,csv_file):
     truth.sort()
     return truth,pred
 
-
-
-tr_X, tr_y = GetAllData( dev_fd+'/'+feature, label_csv )
+tr_X, tr_y = GetAllData( dev_fd+'/'+feature, label_csv)
 
 print(tr_X.shape)
 print(tr_y.shape)    
@@ -204,30 +160,19 @@ if prep=='dev':
     cross_validation=True
 else:
     cross_validation=False
-    
-miz=aud_model.Functional_Model(input_neurons=input_neurons,cross_validation=cross_validation,dropout1=dropout1,
-    act1=act1,act2=act2,act3=act3,nb_filter = nb_filter, filter_length=filter_length,
-    num_classes=num_classes,
-    model=model,dimx=dimx,dimy=dimy)
 
 np.random.seed(68)
-
-lrmodel = KerasClassifier(build_fn=func_cnn, verbose=1)
 
 train_x=np.array(tr_X)
 train_y=np.array(tr_y)
 train_y = to_categorical(train_y,num_classes=len(labels))
 
-# define the grid search parameters
-batch_size = [10, 20]
-epochs = [10, 20]
-param_grid = dict(batch_size=batch_size, epochs=epochs)
-grid = GridSearchCV(estimator=lrmodel, param_grid=param_grid, n_jobs=-1)
-grid_result = grid.fit(train_x,train_y,verbose=1)
-# summarize results
-print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
-means = grid_result.cv_results_['mean_test_score']
-stds = grid_result.cv_results_['std_test_score']
-params = grid_result.cv_results_['params']
-for mean, stdev, param in zip(means, stds, params):
-    print("%f (%f) with: %r" % (mean, stdev, param))
+for d in [0.1,0.2]:
+    for i in [100,200]:
+        miz=aud_model.Functional_Model(input_neurons=i,dropout=d,num_classes=num_classes,model=model,dimx=dimx,dimy=dimy)
+        lrmodel=miz.prepare_model()
+        lrmodel.fit(train_x,train_y,batch_size=batchsize,epochs=epochs,verbose=0)
+        truth,pred=test(lrmodel,txt_eva_path)
+        acc=aud_utils.calculate_accuracy(truth,pred)
+        print "Accuracy %.2f prcnt"%acc
+

@@ -37,12 +37,15 @@ def dnn(input_dim,num_classes,**kwargs):
     act2          = kwargs['kwargs'].get('act2','relu')
     act3          = kwargs['kwargs'].get('act3','relu')
     act4          = kwargs['kwargs'].get('act4','softmax')
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
 
     loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','accuracy')
-    print "Activation 1 {} 2 {} 3 {} 4 {}".format(act1,act2,act3,act4)
     print "Model DNN"
+    print "Activation 1 {} 2 {} 3 {} 4 {}".format(act1,act2,act3,act4)
+    print "Neurons {} Dropout {}".format(input_neurons,dropout)
+    print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
     inpx = Input(shape=(input_dim,))
     x = Dense(input_neurons, activation=act1)(inpx)
     x = Dropout(dropout)(x)
@@ -52,7 +55,8 @@ def dnn(input_dim,num_classes,**kwargs):
     x = Dropout(dropout)(x)
     score = Dense(num_classes, activation=act4)(x)
     model = Model([inpx],score)
-    model.summary()
+    if print_sum:
+        model.summary()
     model.compile(loss=loss,optimizer=optimizer,metrics=[metrics])
     
     return model
