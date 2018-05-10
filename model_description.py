@@ -30,22 +30,30 @@ Functional Models can be accessed by
 """
     
 ########################### BASIC DNN #################################
-def dnn(input_neurons,input_dim,dropout,num_classes,act1=None,act2=None,act3=None,act4='softmax'):
+def dnn(input_dim,num_classes,**kwargs):
+    input_neurons = kwargs['kwargs'].get('input_neurons',200)
+    dropout       = kwargs['kwargs'].get('dropout',0.1)
+    act1          = kwargs['kwargs'].get('act1','relu')
+    act2          = kwargs['kwargs'].get('act2','relu')
+    act3          = kwargs['kwargs'].get('act3','relu')
+    act4          = kwargs['kwargs'].get('act4','softmax')
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
     print "Activation 1 {} 2 {} 3 {} 4 {}".format(act1,act2,act3,act4)
     print "Model DNN"
-    inpx = Input(shape=(input_dim,),name = 'inpx')
+    inpx = Input(shape=(input_dim,))
     x = Dense(input_neurons, activation=act1)(inpx)
-    x= Dropout(dropout)(x)
-    x= Dense(input_neurons, activation=act2)(x)
-    x= Dropout(dropout)(x)
+    x = Dropout(dropout)(x)
+    x = Dense(input_neurons, activation=act2)(x)
+    x = Dropout(dropout)(x)
     x = Dense(input_neurons, activation=act3)(x)
-    x= Dropout(dropout)(x)
+    x = Dropout(dropout)(x)
     score = Dense(num_classes, activation=act4)(x)
     model = Model([inpx],score)
     model.summary()
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='adam',
-                  metrics=['accuracy'])
+    model.compile(loss=loss,optimizer=optimizer,metrics=[metrics])
     
     return model
 
