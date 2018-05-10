@@ -51,6 +51,84 @@ def calculate_accuracy(truth,pred):
     acc=(float(pos)/float(len(pred)))*100
     return acc
 
+def prec_recall_fvalue(pred, truth, thres, average):
+    """
+    Args:
+      pred: shape = (n_samples,) or (n_samples, n_classes)
+      truth: shape = (n_samples,) or (n_samples, n_classes)
+      thres: float between 0 and 1. 
+      average: None (element wise) | 'micro' (calculate metrics globally) 
+        | 'macro' (calculate metrics for each label then average). 
+      
+    Returns:
+      prec, recall, fvalue | list or prec, recall, fvalue. 
+    """
+    eps = 1e-10
+    if pred.ndim == 1:
+        (tp, fn, fp, tn) = cal_tp_fn_fp_tn(pred, truth, thres, average=None)
+        prec = tp / max(float(tp + fp), eps)
+        recall = tp / max(float(tp + fn), eps)
+        fvalue = 2 * (prec * recall) / max(float(prec + recall), eps)
+        return prec, recall, fvalue
+    elif pred.ndim == 2:
+        n_classes = pred.shape[1]
+        if average is None or average == 'macro':
+            precs, recalls, fvalues = [], [], []
+            for j1 in xrange(n_classes):
+                (prec, recall, fvalue) = prec_recall_fvalue(pred[:, j1], truth[:, j1], thres, average=None)
+                precs.append(prec)
+                recalls.append(recall)
+                fvalues.append(fvalue)
+            if average is None:
+                return precs, recalls, fvalues
+            elif average == 'macro':
+                return np.mean(precs), np.mean(recalls), np.mean(fvalues)
+        elif average == 'micro':
+            (prec, recall, fvalue) = prec_recall_fvalue(pred.flatten(), truth.flatten(), thres, average=None)
+            return prec, recall, fvalue
+        else:
+            raise Exception("Incorrect average arg!")
+    else:
+        raise Exception("Incorrect dimension!")        
+        
+def cal_tp_fn_fp_tn(pred, truth, thres, average):
+    """
+    Args:
+      pred: shape = (n_samples,) or (n_samples, n_classes)
+      truth: shape = (n_samples,) or (n_samples, n_classes)
+      thres: float between 0 and 1. 
+      average: None (element wise) | 'micro' (calculate metrics globally) 
+        | 'macro' (calculate metrics for each label then average). 
+      
+    Returns:
+      tp, fn, fp, tn or list of tp, fn, fp, tn. 
+    """
+    if pred.ndim == 1:
+        y_pred = np.zeros_like(pred)
+        y_pred[np.where(pred > thres)] = 1.
+        tp = np.sum(y_pred + truth > 1.5)
+        fn = np.sum(truth - y_pred > 0.5)
+        fp = np.sum(y_pred - truth > 0.5)
+        tn = np.sum(y_pred + truth < 0.5)
+        return tp, fn, fp, tn
+    elif pred.ndim == 2:
+        tps, fns, fps, tns = [], [], [], []
+        n_classes = pred.shape[1]
+        for j1 in xrange(n_classes):
+            (tp, fn, fp, tn) = cal_tp_fn_fp_tn(pred[:, j1], truth[:, j1], thres, None)
+            tps.append(tp)
+            fns.append(fn)
+            fps.append(fp)
+            tns.append(tn)
+        if average is None:
+            return tps, fns, fps, tns
+        elif average == 'micro' or average == 'macro':
+            return np.sum(tps), np.sum(fns), np.sum(fps), np.sum(tns)
+        else: 
+            raise Exception("Incorrect average argument!")
+    else:
+        raise Exception("Incorrect dimension!")    
+    
 def calculate_eer(te_y,y_pred):
     """   
     Input:

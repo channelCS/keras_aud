@@ -18,7 +18,6 @@ import csv
 import cPickle
 import numpy as np
 import scipy
-import time
 from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import KFold
 from keras.utils import to_categorical
@@ -50,16 +49,16 @@ prep='eval'               # Which mode to use
 folds=4                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='CNN'               # Name of model
+model='TCNN'               # Name of model
 feature="logmel"          # Name of feature
 
 dropout1=0.1             # 1st Dropout
 act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
-act3='softmax'           # 3rd Activation
+act3='sigmoid'           # 3rd Activation
 
 input_neurons=400      # Number of Neurons
-epochs=10              # Number of Epochs
+epochs=30              # Number of Epochs
 batchsize=128          # Batch Size
 num_classes=15         # Number of classes
 filter_length=3        # Size of Filter

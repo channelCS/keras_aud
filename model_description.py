@@ -44,7 +44,7 @@ def dnn(input_neurons,input_dim,dropout,num_classes,act1=None,act2=None,act3=Non
     model = Model([inpx],score)
     model.summary()
     model.compile(loss='categorical_crossentropy',
-                  optimizer='adadelta',
+                  optimizer='adam',
                   metrics=['accuracy'])
     
     return model
@@ -462,6 +462,101 @@ def multi_ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1
 ############################ Transpose CNN ################################
 from keras.layers import concatenate
 def transpose_cnn(dimx,dimy,nb_filter,num_classes,
+                         filter_length=None,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
+    """
+    The first section of the neural network contains conv layers.
+    The deconv layer after conv layer maintains the same shape.
+    The last layer will be a conv layer to calculate class wise score.
+    Emphasis is given to check the size parameter for model.
+    This is used for acoustic event detection.
+    """
+    inpx = Input(shape=(1,dimx,dimy),name='inpx')
+    x = Conv2D(filters=50,
+               kernel_size=5,
+               data_format='channels_first',
+               padding='same',
+               activation='tanh')(inpx)
+
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    #hx = ZeroPadding2D(padding=(2, 1))(hx)
+    hx = Conv2D(filters=100,
+               kernel_size=3,
+               data_format='channels_first',
+               padding='same',
+               activation='tanh')(hx)
+   
+
+    x=Conv2DTranspose(filters=100, kernel_size=5,padding='same', data_format='channels_first',activation='tanh')(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    x=Conv2DTranspose(filters=50, kernel_size=5,padding='same', data_format='channels_first',activation='tanh')(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    # Don't use softmax in last layer
+    
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='sigmoid')(hx)
+    # Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    kr(score)
+    
+    """
+    x = Conv2D(filters=1,
+#               kernel_size=(dimy,4),
+               kernel_size=(3,1),
+               data_format='channels_first',
+               padding='same',
+               activation='relu')(inpx)
+
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    #hx = ZeroPadding2D(padding=(2, 1))(hx)
+    x = Conv2D(filters=100,
+               kernel_size=(3,1),
+               data_format='channels_first',
+               padding='same',
+               activation='sigmoid')(hx)
+   
+    # We apply the concept of transposed convolutional neural network for the task
+    print kr(x)
+    x=Conv2DTranspose(filters=100, kernel_size=(3,1),padding='same', data_format='channels_first',activation='sigmoid')(x)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    x=Conv2DTranspose(filters=50, kernel_size=(3,1),padding='same', data_format='channels_first',activation='relu')(hx)
+    hx = MaxPooling2D(pool_size=(2,1))(x)
+    
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='softmax')(hx)
+    # Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    kr(score)
+    """    
+    """
+    conv_1 = Conv2D(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(inpx)
+    act_1 = Activation('relu')(conv_1)
+    
+    conv_2 = Conv2D(64, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(act_1)
+    act_2 = Activation('relu')(conv_2)
+
+    deconv_1 = Conv2DTranspose(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(act_2)
+    act_3 = Activation('relu')(deconv_1)
+
+    merge_1 = concatenate([act_3, act_1], axis=3)
+
+    deconv_2 = Conv2DTranspose(1, (3, 3), strides=(1, 1),data_format='channels_first',  padding='same')(merge_1)
+    act_4 = Activation('relu')(deconv_2)
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='softmax')(act_4)
+    # Check for compiling    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
+    score = Dense(num_classes, activation='sigmoid')(score)
+    """
+    """
+    h=Flatten()(hx)
+    score=Dense(num_classes,activation='softmax')(h)
+    """
+    model = Model(inputs=[inpx], outputs=[score])
+    model.summary()
+    model.compile(loss='binary_crossentropy',
+			  optimizer='adam',
+			  metrics=['accuracy'])
+
+    return model
+
+def transpose_cnn_back(dimx,dimy,nb_filter,num_classes,
                          filter_length=None,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
     """
     The first section of the neural network contains conv layers.

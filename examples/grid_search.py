@@ -211,7 +211,7 @@ miz=aud_model.Functional_Model(input_neurons=input_neurons,cross_validation=cros
     model=model,dimx=dimx,dimy=dimy)
 
 np.random.seed(68)
-bre
+
 lrmodel = KerasClassifier(build_fn=func_cnn, verbose=1)
 
 train_x=np.array(tr_X)
@@ -223,7 +223,7 @@ batch_size = [10, 20]
 epochs = [10, 20]
 param_grid = dict(batch_size=batch_size, epochs=epochs)
 grid = GridSearchCV(estimator=lrmodel, param_grid=param_grid, n_jobs=-1)
-grid_result = grid.fit(train_x,train_y)
+grid_result = grid.fit(train_x,train_y,verbose=1)
 # summarize results
 print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
 means = grid_result.cv_results_['mean_test_score']

@@ -49,9 +49,9 @@ act1='relu'              # 1st Activation
 act2='sigmoid'              # 2nd Activation
 act3='sigmoid'           # 3rd Activation
 
-input_neurons=800      # Number of Neurons
-epochs=20             # Number of Epochs
-batchsize=128        # Batch Size
+input_neurons=400      # Number of Neurons
+epochs=2             # Number of Epochs
+batchsize=64       # Batch Size
 num_classes=len(labels) # Number of classes
 filter_length=5      # Size of Filter
 nb_filter=128         # Number of Filters
@@ -235,5 +235,10 @@ else:
     truth,pred=test(lrmodel,meta_test_csv,model)
 
     eer=aud_utils.calculate_eer(truth,pred)
+    
+    p,r,f=aud_utils.prec_recall_fvalue(pred,truth,0.4,'macro')
     print "EER %.2f"%eer
+    print "Precision %.2f"%p
+    print "Recall %.2f"%r
+    print "F1 score %.2f"%f
 
