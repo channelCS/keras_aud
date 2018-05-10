@@ -63,10 +63,26 @@ def dnn(input_dim,num_classes,**kwargs):
 
 ########################### BASIC CNN #################################
 
-def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
-                         filter_length,num_classes,pool_size=(3,3),act1=None,act2=None,act3=None,dataset=None):
-    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
+def cnn(dimx,dimy,num_classes,**kwargs):
+    input_neurons  = kwargs['kwargs'].get('input_neurons',200)
+    act1           = kwargs['kwargs'].get('act1','relu')
+    act2           = kwargs['kwargs'].get('act2','relu')
+    act3           = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',100)
+    filter_length  = kwargs['kwargs'].get('filter_length',3)
+    pool_size      = kwargs['kwargs'].get('pool_size',(2,2))
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+
     print "Model CNN"
+    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
+    print "Neurons {} Dropout {}".format(input_neurons,dropout)
+    print "Kernels {} Size {} Poolsize {}".format(nb_filter,filter_length,pool_size)
+    print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
     inpx = Input(shape=(1,dimx,dimy),name='inpx')
     
     x = Conv2D(filters=nb_filter,
@@ -82,14 +98,9 @@ def cnn(input_neurons,dimx,dimy,dropout,nb_filter,
     score = Dense(num_classes,activation=act3,name='score')(wrap)
     
     model = Model([inpx],score)
-    if dataset is None:
-        model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
-    elif dataset =='chime2016':
-        model.compile(loss='binary_crossentropy',
-              optimizer='adam',
-              metrics=['mse'])
+    if print_sum:
+        model.summary()
+    model.compile(loss=loss,optimizer=optimizer,metrics=[metrics])
     
     return model
 

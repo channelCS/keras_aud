@@ -22,13 +22,13 @@ from sklearn.cross_validation import KFold
 
 ## SET PATHS ACCORDING TO WHERE DATA SHOULD BE STORED
  
-wav_dev_fd   = ka_path+'/chime_data/audio/dev'
-wav_eva_fd   = ka_path+'/chime_data/audio/eva'
-dev_fd       = ka_path+'/chime_data/features/dev'
-eva_fd       = ka_path+'/chime_data/features/eva'
-meta_train_csv  = ka_path+'/chime_data/texts/meta_csvs/development_chunks_refined.csv'
-meta_test_csv   = ka_path+'/chime_data/texts/meta_csvs/evaluation_chunks_refined.csv' #eva_csv_path
-label_csv       = ka_path+'/chime_data/texts/label_csvs'
+wav_dev_fd   = ka_path+'/chime_data_rr/audio/dev'
+wav_eva_fd   = ka_path+'/chime_data_rr/audio/eva'
+dev_fd       = ka_path+'/chime_data_rr/features/dev'
+eva_fd       = ka_path+'/chime_data_rr/features/eva'
+meta_train_csv  = ka_path+'/chime_data_rr/texts/meta_csvs/development_chunks_raw.csv'
+meta_test_csv   = ka_path+'/chime_data_rr/texts/meta_csvs/evaluation_chunks_refined.csv' #eva_csv_path
+label_csv       = ka_path+'/chime_data_rr/texts/label_csvs'
 
 labels = [ 'c', 'm', 'f', 'v', 'p', 'b', 'o', 'S' ]
 
@@ -41,8 +41,8 @@ prep='eval'               # Which mode to use
 folds=2                   # Number of folds
 #Parameters that are passed to the model.
 model_type='Functional'   # Type of model
-model='TCNN'               # Name of model
-feature="logmel"          # Name of feature
+model='CNN'               # Name of model
+feature="cqt"          # Name of feature
 
 dropout1=0.25          # 1st Dropout
 act1='relu'              # 1st Activation
@@ -67,13 +67,15 @@ print "Number of filters",nb_filter
 
 ## UNPACK THE DATASET ACCORDING TO KERAS_AUD
 
-# [NEEDED AT INITIAL STAGE]path='E:/akshita_workspace/chime_home'
-# [NEEDED AT INITIAL STAGE]aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
+# [NEEDED AT INITIAL STAGE]
+path='E:/akshita_workspace/chime_home'
+# [NEEDED AT INITIAL STAGE]
+#aud_utils.unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv)
 
 ## EXTRACT FEATURES
 
-#aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
-#aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
+aud_audio.extract(feature, wav_dev_fd, dev_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
+aud_audio.extract(feature, wav_eva_fd, eva_fd+'/'+feature,'defaults.yaml',dataset='chime_2016')
 
 
 def GetAllData(fe_fd, csv_file, agg_num, hop):
