@@ -30,7 +30,47 @@ Functional Models can be accessed by
 """
     
 ########################### BASIC DNN #################################
-def dnn(input_dim,num_classes,**kwargs):
+def dnn(dimx,dimy,num_classes,**kwargs):
+    """
+    Deep Neural Network containing 3 Dense layers each followed by a Dropout.
+    
+    Parameters
+    ----------
+    input_neurons : int
+        default : 200
+        Number of Neurons for each Dense layer.
+    dropout : float
+        default : 0.1
+        Dropout used after each Dense Layer.
+    act1 : str
+        default : relu
+        Activation used after 1st layer.
+    act2 : str
+        default : relu
+        Activation used after 2nd layer.
+    act3 : str
+        default : relu
+        Activation used after 3rd layer.
+    act4 : str
+        default : softmax
+        Activation used after 4th layer.
+    print_sum : bool
+        default : False
+        Print summary if the model
+    loss
+        default : categorical_crossentropy
+        Loss used
+    optimizer
+        default : adam
+        Optimizer used
+    metrics
+        default : accuracy
+        Metrics used.
+        
+    Returns
+    -------
+    DNN Model
+    """
     input_neurons = kwargs['kwargs'].get('input_neurons',200)
     dropout       = kwargs['kwargs'].get('dropout',0.1)
     act1          = kwargs['kwargs'].get('act1','relu')
@@ -46,11 +86,12 @@ def dnn(input_dim,num_classes,**kwargs):
     print "Activation 1 {} 2 {} 3 {} 4 {}".format(act1,act2,act3,act4)
     print "Neurons {} Dropout {}".format(input_neurons,dropout)
     print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
+    input_dim = dimx * dimy
     inpx = Input(shape=(input_dim,))
     x = Dense(input_neurons, activation=act1)(inpx)
     x = Dropout(dropout)(x)
-    #x = Dense(input_neurons, activation=act2)(x)
-    #x = Dropout(dropout)(x)
+    x = Dense(input_neurons, activation=act2)(x)
+    x = Dropout(dropout)(x)
     x = Dense(input_neurons, activation=act3)(x)
     x = Dropout(dropout)(x)
     score = Dense(num_classes, activation=act4)(x)
@@ -64,6 +105,54 @@ def dnn(input_dim,num_classes,**kwargs):
 ########################### BASIC CNN #################################
 
 def cnn(dimx,dimy,num_classes,**kwargs):
+    """
+    Convolution Neural Network containing 1 Convolution layer followed by a 
+    Dense Layer.
+    
+    Parameters
+    ----------
+    input_neurons : int
+        default : 200
+        Number of Neurons for the Dense layer.
+    dropout : float
+        default : 0.1
+        Dropout used after the Dense Layer.
+    act1 : str
+        default : relu
+        Activation used after 1st Convolution layer.
+    act2 : str
+        default : relu
+        Activation used after 1st Dense layer.
+    act3 : str
+        default : softmax
+        Activation used after last Dense layer.
+    print_sum : bool
+        default : False
+        Print summary if the model
+    nb_filter : int
+        default : 100
+        Number of kernels
+    filter_length : int, tuple
+        default : 3
+        Size of kernels
+    pool_size : int, tuple
+        default : (2,2)
+        Pooling size.
+    loss
+        default : categorical_crossentropy
+        Loss used
+    optimizer
+        default : adam
+        Optimizer used
+    metrics
+        default : accuracy
+        Metrics used.
+        
+    Returns
+    -------
+    CNN Model
+    """
+
     input_neurons  = kwargs['kwargs'].get('input_neurons',200)
     act1           = kwargs['kwargs'].get('act1','relu')
     act2           = kwargs['kwargs'].get('act2','relu')
@@ -105,22 +194,77 @@ def cnn(dimx,dimy,num_classes,**kwargs):
     return model
 
 ########################### BASIC RNN #################################
-def rnn(input_neurons,input_dim,num_classes):
+def rnn(dimx,dimy,num_classes,**kwargs):
+    """
+    Deep Neural Network containing 1 LSTM layers followed by 3 Dense Layers.
+    
+    Parameters
+    ----------
+    rnn_units : int
+        default : 32
+        Number of Units for LSTM layer.
+    input_neurons : int
+        default : 200
+        Number of Neurons for each Dense layer.
+    act1 : str
+        default : relu
+        Activation used after 1st layer.
+    act2 : str
+        default : relu
+        Activation used after 2nd layer.
+    act3 : str
+        default : relu
+        Activation used after 3rd layer.
+    act4 : str
+        default : softmax
+        Activation used after 4th layer.
+    print_sum : bool
+        default : False
+        Print summary if the model
+    loss
+        default : categorical_crossentropy
+        Loss used
+    optimizer
+        default : adam
+        Optimizer used
+    metrics
+        default : accuracy
+        Metrics used.
+        
+    Returns
+    -------
+    RNN Model
+    """
+    rnn_units     = kwargs['kwargs'].get('rnn_units',32)
+    input_neurons = kwargs['kwargs'].get('input_neurons',200)
+    act1          = kwargs['kwargs'].get('act1','relu')
+    act2          = kwargs['kwargs'].get('act2','relu')
+    act3          = kwargs['kwargs'].get('act3','relu')
+    act4          = kwargs['kwargs'].get('act4','sigmoid')
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+
+    
+    input_dim=dimx*dimy
     main_input = Input(shape=(1,input_dim), name='main_input')
-    x = LSTM(32)(main_input)
+    x = LSTM(rnn_units)(main_input)
 
     # We stack a deep densely-connected network on top
-    x = Dense(input_neurons, activation='relu')(x)
-    x = Dense(input_neurons, activation='relu')(x)
-    x = Dense(input_neurons, activation='relu')(x)
+    x = Dense(input_neurons, activation=act1)(x)
+    x = Dense(input_neurons, activation=act2)(x)
+    x = Dense(input_neurons, activation=act3)(x)
     
     # And finally we add the main logistic regression layer
-    main_output = Dense(num_classes, activation='sigmoid', name='main_output')(x)
+    main_output = Dense(num_classes, activation=act4, name='main_output')(x)
     model = Model(inputs=main_input, outputs=main_output)
-    model.summary()
-    model.compile(loss='categorical_crossentropy',
-              optimizer='adadelta',
-              metrics=['accuracy'])
+    if print_sum:
+        model.summary()
+    model.compile(loss=loss,
+              optimizer=optimizer,
+              metrics=[metrics])
 
     return model
 

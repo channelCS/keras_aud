@@ -41,11 +41,11 @@ class Functional_Model:
         This function
         """
         if self.model=='DNN':
-            lrmodel=M.dnn(num_classes=self.num_classes,input_dim=self.dimx*self.dimy,kwargs=self.kwargs)
+            lrmodel=M.dnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs = self.kwargs)
         elif self.model=='CNN':
-            lrmodel=M.cnn(num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,kwargs=self.kwargs)
+            lrmodel=M.cnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs = self.kwargs)
         elif self.model=='RNN':
-            lrmodel=M.rnn(num_classes=self.num_classes,input_dim=self.dimx*self.dimy,kwargs=self.kwargs)
+            lrmodel=M.rnn(num_classes=self.num_classes,dimx=self.dimx,dimy=self.dimy,kwargs = self.kwargs)
         elif self.model=='CRNN':
             lrmodel=M.cnn_rnn(num_classes=self.num_classes,dimx = self.dimx,dimy = self.dimy,kwargs=self.kwargs)
         elif self.model=='FCRNN':
