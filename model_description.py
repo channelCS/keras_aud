@@ -358,92 +358,7 @@ def cnn_rnn(dimx,dimy,num_classes,**kwargs):
 
     return model
 
-########################### BASIC FCRNN #################################
-def feature_cnn_rnn(dimx,dimy,num_classes,**kwargs):
-    """
-    Extract features using CNN and pass them as a input to LSTM.
-    
-    Parameters
-    ----------
-    rnn_units : int
-        default : 32
-        Number of Units for LSTM layer.
-    input_neurons : int
-        default : 200
-        Number of Neurons for each Dense layer.
-	dropout : float
-        default : 0.1
-        Dropout used after the Dense Layer.
-    act1 : str
-        default : relu
-        Activation used after Convolution layer.
-    act2 : str
-        default : tanh
-        Activation used after Recurrent layer.
-    act3 : str
-        default : softmax
-        Activation used after Dense layer.
-    print_sum : bool
-        default : False
-        Print summary if the model
-	nb_filter : int
-        default : 100
-        Number of kernels
-    filter_length : int, tuple
-        default : 3
-        Size of kernels
-    pool_size : int, tuple
-        default : (2,2)
-        Pooling size.
-    loss
-        default : categorical_crossentropy
-        Loss used
-    optimizer
-        default : adam
-        Optimizer used
-    metrics
-        default : accuracy
-        Metrics used.
-        
-    Returns
-    -------
-    FCRNN Model
-    """
-    #rnn_units     = kwargs['kwargs'].get('rnn_units',32)
-    input_neurons = kwargs['kwargs'].get('input_neurons',200)
-    act1          = kwargs['kwargs'].get('act1','relu')
-    act2          = kwargs['kwargs'].get('act2','tanh')
-    act3          = kwargs['kwargs'].get('act3','softmax')
-    dropout        = kwargs['kwargs'].get('dropout',0.1)
-    nb_filter      = kwargs['kwargs'].get('nb_filter',100)
-    filter_length  = kwargs['kwargs'].get('filter_length',3)
-    pool_size      = kwargs['kwargs'].get('pool_size',(2,2))
-    print_sum      = kwargs['kwargs'].get('print_sum',False)
 
-    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
-    optimizer     = kwargs['kwargs'].get('optimizer','adam')
-    metrics       = kwargs['kwargs'].get('metrics','accuracy')
-
-    main_input = Input(shape=(1,dimx,dimy))
-    x = Conv2D(filters=nb_filter,
-               kernel_size=filter_length,
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(main_input)
-    hx = MaxPooling2D(pool_size=pool_size)(x)
-    wrap= Dropout(dropout)(hx)
-    h = Flatten()(wrap)
-    wrap = Dense(input_neurons, activation=act2,name='wrap')(h)
-
-    score = Dense(num_classes,activation=act3,name='score')(wrap)
-    model = Model([main_input],score)
-    if print_sum:
-        model.summary()
-    model.compile(loss=loss,
-              optimizer=optimizer,
-              metrics=[metrics])
-    
-    return model
 
 ############################# BASIC CBRNN #############################
 def cbrnn(dimx,dimy,num_classes,**kwargs):
@@ -503,9 +418,9 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     pool_size      = kwargs['kwargs'].get('pool_size',(2,2))
     print_sum      = kwargs['kwargs'].get('print_sum',False)
 
-    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
-    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+    metrics       = kwargs['kwargs'].get('metrics','mse')
 
 
     print "Functional CBRNN"
@@ -551,9 +466,12 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     x = Reshape((b*d,c))(x) 
 #    x = Reshape((c*d,b))(x) 
     
-    w = Bidirectional(LSTM(rnn_units,activation=act2,return_sequences=False))(x)
+#    w = Bidirectional(LSTM(rnn_units,activation=act2,return_sequences=False))(x)
+    rnnout = Bidirectional(LSTM(rnn_units, activation=act2, return_sequences=True))(x)
+    rnnout_gate = Bidirectional(LSTM(rnn_units, activation=act3, return_sequences=False))(x)
+    w = Multiply()([rnnout, rnnout_gate])
     wrap= Dropout(dropout)(w)
-    
+    wrap=Flatten()(wrap)
     main_output = Dense(num_classes, activation=act3, name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
     model.summary()
@@ -564,6 +482,60 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
               metrics=[metrics])
     
     return model
+
+############################ Transpose CNN ################################
+def transpose_cnn(dimx,dimy,num_classes,**kwargs):
+    """
+    The first section of the neural network contains conv layers.
+    The deconv layer after conv layer maintains the same shape.
+    The last layer will be a conv layer to calculate class wise score.
+    Emphasis is given to check the size parameter for model.
+    This is used for acoustic event detection.
+    """
+    act1          = kwargs['kwargs'].get('act1','tanh')
+    act2          = kwargs['kwargs'].get('act2','tanh')
+    act3          = kwargs['kwargs'].get('act3','sigmoid')
+    nb_filter      = kwargs['kwargs'].get('nb_filter',[])
+    pool_size      = kwargs['kwargs'].get('pool_size',(1,2))
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','mse')
+    inpx = Input(shape=(1,dimx,dimy),name='inpx')
+    x = Conv2D(filters=nb_filter[0],
+               kernel_size=5,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx)
+
+    hx = MaxPooling2D(pool_size=pool_size)(x)
+    #hx = ZeroPadding2D(padding=(2, 1))(hx)
+    hx = Conv2D(filters=nb_filter[1],
+               kernel_size=3,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(hx)
+   
+
+    x=Conv2DTranspose(filters=nb_filter[1], kernel_size=3,padding='same', data_format='channels_first',activation=act2)(hx)
+    hx = MaxPooling2D(pool_size=pool_size)(x)
+    x=Conv2DTranspose(filters=nb_filter[0], kernel_size=5,padding='same', data_format='channels_first',activation=act2)(hx)
+    hx = MaxPooling2D(pool_size=pool_size)(x)
+    # Don't use softmax in last layer
+    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation=act3)(hx)
+    # Check for compiling 
+    wrap= Dropout(dropout)(score)
+    score=GlobalAveragePooling2D(data_format='channels_first')(wrap)
+    kr(score)
+    
+    model = Model(inputs=[inpx], outputs=[score])
+    model.summary()
+    model.compile(loss=loss,
+			  optimizer=optimizer,
+			  metrics=[metrics])
+
+    return model
+
 
 ####################### ATTENTION MODEL ACRNN ##################################
 def block(Input):
@@ -644,49 +616,6 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
                   metrics=['mse'])
     
     return mymodel 
-
-############################ Transpose CNN ################################
-def transpose_cnn(dimx,dimy,num_classes,**kwargs):
-    """
-    The first section of the neural network contains conv layers.
-    The deconv layer after conv layer maintains the same shape.
-    The last layer will be a conv layer to calculate class wise score.
-    Emphasis is given to check the size parameter for model.
-    This is used for acoustic event detection.
-    """
-    inpx = Input(shape=(1,dimx,dimy),name='inpx')
-    x = Conv2D(filters=50,
-               kernel_size=5,
-               data_format='channels_first',
-               padding='same',
-               activation='tanh')(inpx)
-
-    hx = MaxPooling2D(pool_size=(2,1))(x)
-    #hx = ZeroPadding2D(padding=(2, 1))(hx)
-    hx = Conv2D(filters=100,
-               kernel_size=3,
-               data_format='channels_first',
-               padding='same',
-               activation='tanh')(hx)
-   
-
-    x=Conv2DTranspose(filters=100, kernel_size=5,padding='same', data_format='channels_first',activation='tanh')(hx)
-    hx = MaxPooling2D(pool_size=(2,1))(x)
-    x=Conv2DTranspose(filters=50, kernel_size=5,padding='same', data_format='channels_first',activation='tanh')(hx)
-    hx = MaxPooling2D(pool_size=(2,1))(x)
-    # Don't use softmax in last layer
-    score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation='sigmoid')(hx)
-    # Check for compiling    
-    score=GlobalAveragePooling2D(data_format='channels_first')(score)
-    kr(score)
-    
-    model = Model(inputs=[inpx], outputs=[score])
-    model.summary()
-    model.compile(loss='binary_crossentropy',
-			  optimizer='adam',
-			  metrics=['accuracy'])
-
-    return model
 
 ##################### Sequence2Sequence Model ############################
 def seq2seq_lstm(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
