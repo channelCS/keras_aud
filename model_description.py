@@ -646,8 +646,7 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
     return mymodel 
 
 ############################ Transpose CNN ################################
-def transpose_cnn(dimx,dimy,nb_filter,num_classes,
-                         filter_length=None,pool_size=(3,3),act1=None,act2=None,act3=None,dropout=0.1):
+def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     """
     The first section of the neural network contains conv layers.
     The deconv layer after conv layer maintains the same shape.
@@ -692,8 +691,6 @@ def transpose_cnn(dimx,dimy,nb_filter,num_classes,
 ##################### Sequence2Sequence Model ############################
 def seq2seq_lstm(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
     # Recurrent sequence to sequence learning auto encoders for audio classification task
-    
-    
     print "seq2seq_lstm"
     
     ## encoder
