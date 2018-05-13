@@ -98,6 +98,9 @@ class Functional_Model:
             lrmodel=M.transpose_cnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
         elif self.model=='MultiACRNN':
             lrmodel=M.multi_ACRNN(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
+        elif self.model=='seq2seq':
+            lrmodel=M.seq2seq(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
+        
         else:
             raise ValueError("Could not find model {}".format(self.model))
         return lrmodel

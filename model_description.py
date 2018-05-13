@@ -491,56 +491,13 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     The last layer will be a conv layer to calculate class wise score.
     Emphasis is given to check the size parameter for model.
     This is used for acoustic event detection.
-    Parameters
-    ----------
-    dropout : float
-        default : 0.1
-        Dropout used after the Dense Layer.
-    act1 : str
-        default : tanh
-        Activation used after Convolution-Deconvolution layers.
-    act2 : str
-        default : tanh
-        Activation used after 2nd Deconvolution Layer layer.
-    act3 : str
-        default : sigmoid
-        Activation used after last Convolution layer.
-    print_sum : bool
-        default : False
-        Print summary if the model
-	nb_filter : int
-        default : 100
-        Number of kernels
-    filter_length : list of (int, tuple)
-        default : [(3,3),(5,5)])
-        Size of kernels
-    pool_size : int, tuple
-        default : (1,2)
-        Pooling size.
-    loss
-        default : categorical_crossentropy
-        Loss used
-    optimizer
-        default : adam
-        Optimizer used
-    metrics
-        default : accuracy
-        Metrics used.
-        
-    Returns
-    -------
-    CBRNN Model
-
     """
     act1          = kwargs['kwargs'].get('act1','tanh')
     act2          = kwargs['kwargs'].get('act2','tanh')
     act3          = kwargs['kwargs'].get('act3','sigmoid')
-    nb_filter     = kwargs['kwargs'].get('nb_filter',[100,100]),
-    filter_length = kwargs['kwargs'].get('filter_length',[(3,3),(5,5)])
-    pool_size     = kwargs['kwargs'].get('pool_size',(1,2))
-    dropout       = kwargs['kwargs'].get('dropout',0.1)
-    print_sum     = kwargs['kwargs'].get('print_sum',False)
-
+    nb_filter      = kwargs['kwargs'].get('nb_filter',[])
+    pool_size      = kwargs['kwargs'].get('pool_size',(1,2))
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
     loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','mse')
@@ -554,30 +511,78 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     hx = MaxPooling2D(pool_size=pool_size)(x)
     #hx = ZeroPadding2D(padding=(2, 1))(hx)
     hx = Conv2D(filters=nb_filter[1],
-               kernel_size=filter_length[0],
+               kernel_size=3,
                data_format='channels_first',
                padding='same',
                activation=act1)(hx)
    
-
-    x=Conv2DTranspose(filters=nb_filter[1], kernel_size=filter_length[0],padding='same', data_format='channels_first',activation=act2)(hx)
+   
+    x=Conv2DTranspose(filters=nb_filter[1], kernel_size=3,padding='same', data_format='channels_first',activation=act2)(hx)
     hx = MaxPooling2D(pool_size=pool_size)(x)
-    x=Conv2DTranspose(filters=nb_filter[0], kernel_size=filter_length[1],padding='same', data_format='channels_first',activation=act2)(hx)
+    x=Conv2DTranspose(filters=nb_filter[0], kernel_size=5,padding='same', data_format='channels_first',activation=act2)(hx)
     hx = MaxPooling2D(pool_size=pool_size)(x)
     # Don't use softmax in last layer
     score=Conv2D(filters=num_classes, kernel_size=(1,1),padding='same', data_format='channels_first',activation=act3)(hx)
     # Check for compiling 
-    wrap= Dropout(dropout)(score)
-    score=GlobalAveragePooling2D(data_format='channels_first')(wrap)
+#    wrap= Dropout(dropout)(score)
+    
+    score=GlobalAveragePooling2D(data_format='channels_first')(score)
     kr(score)
     
     model = Model(inputs=[inpx], outputs=[score])
-    if print_sum:
-        model.summary()
+    model.summary()
     model.compile(loss=loss,
-              optimizer=optimizer,
-              metrics=[metrics])
+			  optimizer=optimizer,
+			  metrics=[metrics])
+
+    return model
+
+##################### Sequence2Sequence Model ############################
+def seq2seq(dimx,dimy,num_classes,**kwargs):
+    # Recurrent sequence to sequence learning auto encoders for audio classification task
     
+    
+    print "seq2seq_lstm"
+    
+    ## encoder
+    encoder_input = Input(shape=(dimx,dimy))
+    encoder=Bidirectional(LSTM(32,return_state=True))# Returns list of nos. of output states
+    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_input)
+    state_h = Concatenate(axis=1)([forward_h, backward_h])
+    state_c = Concatenate(axis=1)([forward_c, backward_c])
+    encoder_states = [state_h, state_c]
+    
+#    a,b = kr(encoder_outputs)
+#    x = Reshape((b,1))(encoder_outputs)
+    
+    
+    ## decoder
+    decoder_input = Input(shape=(dimx,dimy), name='main_input')
+    decoder_lstm = LSTM(64, return_sequences=True, return_state=True)
+    decoder_outputs, _, _ = decoder_lstm(decoder_input,
+                                         initial_state=encoder_states)
+    #h=Flatten()(decoder_outputs)
+    decoder_dense = Dense(10, activation='softmax')(decoder_outputs)
+    model = Model([encoder_input, decoder_input], decoder_dense)
+    model.summary()
+    model.compile(loss='categorical_crossentropy',
+			  optimizer='adam',
+			  metrics=['accuracy'])
+#
+#    ## encoder model 
+#    encoder_model = Model(encoder_input, encoder_states)
+#    
+#    ##decoder model
+#    
+#    decoder_state_input_h = Input(shape=(64,))
+#    decoder_state_input_c = Input(shape=(64,))
+#    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+#    decoder_outputs, state_h, state_c = decoder_lstm(
+#    decoder_input, initial_state=decoder_states_inputs)
+#    decoder_states = [state_h, state_c]
+#    decoder_outputs = decoder_dense(decoder_outputs)
+#    decoder_model = Model( [decoder_input] + decoder_states_inputs,[decoder_outputs] + decoder_states)
+#  
     return model
 
 
@@ -661,51 +666,8 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
     
     return mymodel 
 
-##################### Sequence2Sequence Model ############################
-def seq2seq_lstm(input_neurons,dimx,dimy,num_classes,**kwargs):
-    # Recurrent sequence to sequence learning auto encoders for audio classification task
-    print "seq2seq_lstm"
-    
-    ## encoder
-    encoder_input = Input(shape=(dimx,dimy))
-    encoder=Bidirectional(LSTM(32,return_state=True),merge_mode="mul")# Returns list of nos. of output states
-    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_input)
-    state_h = Concatenate()([forward_h, backward_h])
-    state_c = Concatenate()([forward_c, backward_c])
-    encoder_states = [state_h, state_c]
-    
-#    a,b = kr(encoder_outputs)
-#    x = Reshape((b,1))(encoder_outputs)
-    
-    
-    ## decoder
-    decoder_input = Input(shape=(dimx,dimy), name='main_input')
-    decoder_lstm = LSTM(64, return_sequences=True, return_state=True)
-    decoder_outputs, _, _ = decoder_lstm(decoder_input,
-                                         initial_state=encoder_states)
-    #h=Flatten()(decoder_outputs)
-    decoder_dense = Dense(num_classes, activation='softmax')(decoder_outputs)
-    model = Model([encoder_input, decoder_input], decoder_dense)
-    model.summary()
-    model.compile(loss='categorical_crossentropy',
-			  optimizer='adam',
-			  metrics=['accuracy'])
 
-    ## encoder model 
-    encoder_model = Model(encoder_input, encoder_states)
-    
-    ##decoder model
-    
-    decoder_state_input_h = Input(shape=(64,))
-    decoder_state_input_c = Input(shape=(64,))
-    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-    decoder_outputs, state_h, state_c = decoder_lstm(
-    decoder_input, initial_state=decoder_states_inputs)
-    decoder_states = [state_h, state_c]
-    decoder_outputs = decoder_dense(decoder_outputs)
-    decoder_model = Model( [decoder_input] + decoder_states_inputs,[decoder_outputs] + decoder_states)
-  
-    return model, encoder_model, decoder_model 
+
 
 
 ########################################### DYNAMIC MODELS ###########################################
