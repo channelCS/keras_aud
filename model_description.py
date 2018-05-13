@@ -546,6 +546,7 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
     
     ## encoder
     encoder_input = Input(shape=(dimx,dimy))
+    
     encoder=Bidirectional(LSTM(32,return_state=True))# Returns list of nos. of output states
     encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_input)
     state_h = Concatenate(axis=1)([forward_h, backward_h])
@@ -558,12 +559,15 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
     
     ## decoder
     decoder_input = Input(shape=(dimx,dimy), name='main_input')
+    
     decoder_lstm = LSTM(64, return_sequences=True, return_state=True)
     decoder_outputs, _, _ = decoder_lstm(decoder_input,
                                          initial_state=encoder_states)
     #h=Flatten()(decoder_outputs)
-    decoder_dense = Dense(10, activation='softmax')(decoder_outputs)
-    model = Model([encoder_input, decoder_input], decoder_dense)
+    decoder_dense = Dense(40, activation='softmax')
+    decoder_outputs=decoder_dense(decoder_outputs)
+    print kr(decoder_outputs)
+    model = Model([encoder_input, decoder_input], decoder_outputs)
     model.summary()
     model.compile(loss='categorical_crossentropy',
 			  optimizer='adam',
