@@ -474,7 +474,6 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     wrap=Flatten()(wrap)
     main_output = Dense(num_classes, activation=act3, name='main_output')(wrap)
     model = Model(inputs=main_input, outputs=main_output)
-    model.summary()
     if print_sum:
         model.summary()
     model.compile(loss=loss,
@@ -594,7 +593,7 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
 
 ####################### ATTENTION MODEL ACRNN ##################################
 def block(Input):
-    print kr(Input)
+    #print kr(Input)
     cnn = Conv2D(128, (3, 3), data_format='channels_first',padding="same", activation="linear", use_bias=False)(Input)
     #cnn = BatchNormalization(axis=-1)(cnn)
 
@@ -629,6 +628,10 @@ def outfunc(vects):
 def ACRNN(dimx,dimy,num_classes,**kwargs):
     print "ACRNN"
     print_sum      = kwargs['kwargs'].get('print_sum',False)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','mse')
 
     input_logmel = Input(shape=(1,dimx,dimy))
     a1 = block(input_logmel)
@@ -669,9 +672,9 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
     
     #opt=optimizers.Adam(1e-3)
     # Compile model
-    mymodel.compile(loss='categorical_crossentropy',
-                  optimizer='adam',
-                  metrics=['mse'])
+    mymodel.compile(loss=loss,
+                  optimizer=optimizer,
+                  metrics=[metrics])
     
     return mymodel 
 
@@ -732,8 +735,7 @@ def cnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
     last_act  = kwargs['kwargs'].get('last_act','softmax')
 
     if not np.all([len(acts)==cnn_layers,len(nb_filter)==cnn_layers,len(filter_length)==cnn_layers]):
-        print "Layers Mismatch"
-        return False
+        raise Exception("Layers Mismatch")
     x = Input(shape=(1,dimx,dimy),name='inpx')
     inpx = x
     for i in range(cnn_layers):
