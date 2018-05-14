@@ -498,6 +498,8 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     nb_filter      = kwargs['kwargs'].get('nb_filter',[])
     pool_size      = kwargs['kwargs'].get('pool_size',(1,2))
     dropout        = kwargs['kwargs'].get('dropout',0.1)
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
     loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','mse')
@@ -530,7 +532,8 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     kr(score)
     
     model = Model(inputs=[inpx], outputs=[score])
-    model.summary()
+    if print_sum:
+        model.summary()
     model.compile(loss=loss,
 			  optimizer=optimizer,
 			  metrics=[metrics])
@@ -625,6 +628,8 @@ def outfunc(vects):
 
 def ACRNN(dimx,dimy,num_classes,**kwargs):
     print "ACRNN"
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
     input_logmel = Input(shape=(1,dimx,dimy))
     a1 = block(input_logmel)
     a1 = block(a1)
@@ -659,7 +664,8 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
     out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
     kr(out)    
     mymodel = Model([input_logmel], out)
-    mymodel.summary()
+    if print_sum:
+        mymodel.summary()
     
     #opt=optimizers.Adam(1e-3)
     # Compile model

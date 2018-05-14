@@ -119,7 +119,7 @@ def logmel(features,path,dataset=None):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    wav, fs = read_audio('librosa',path,'dcase_2016')
+    wav, fs = read_audio('librosa',path,dataset)
     #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -142,7 +142,7 @@ def logmel(features,path,dataset=None):
     X=feature_normalize(X)
     return X
 
-def cqt(features,path):
+def cqt(features,path,dataset=None):
     """
     This function extracts constant q-transform from audio.
     Make sure, you pass a dictionary containing all attributes
