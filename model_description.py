@@ -79,7 +79,7 @@ def dnn(dimx,dimy,num_classes,**kwargs):
     act4          = kwargs['kwargs'].get('act4','softmax')
     print_sum      = kwargs['kwargs'].get('print_sum',False)
 
-    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','accuracy')
     print "Model DNN"
@@ -566,7 +566,6 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
     #h=Flatten()(decoder_outputs)
     decoder_dense = Dense(40, activation='softmax')
     decoder_outputs=decoder_dense(decoder_outputs)
-    print kr(decoder_outputs)
     model = Model([encoder_input, decoder_input], decoder_outputs)
     model.summary()
     model.compile(loss='categorical_crossentropy',
