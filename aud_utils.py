@@ -214,11 +214,18 @@ def equalise(tr_X):
         
     """
     chan=[]
-    l=len(max(tr_X[:]))
-    chan=[i for i in range(len(tr_X)) if len(tr_X[i])!=l]
+    #l=len(max(tr_X[:]))
+    m=-1
+    l=-1
+    for i in range(len(tr_X)):
+        if len(tr_X[i])>m:
+            m=len(tr_X[i])
+            l=i
+
+    chan=[i for i in range(len(tr_X)) if len(tr_X[i])!=m]
     for k in chan:
         a,b,d=tr_X[k].shape
-        newx=np.zeros([l,b,d])
+        newx=np.zeros([m,b,d])
         j=0
         for i in range(len(tr_X[k])):
             newx[j]=tr_X[k][i]
