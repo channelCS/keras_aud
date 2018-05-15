@@ -8,7 +8,7 @@ Email - akshitadvlp@gmail.com
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, Merge
-from keras.layers import BatchNormalization, ZeroPadding2D, Lambda, dot,Activation,Concatenate
+from keras.layers import BatchNormalization, Lambda,Activation,Concatenate
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
@@ -482,7 +482,7 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     
     return model
 
-############################ Multi CNN ################################
+############################ Multi CNN : Ensemble model combining different features ################################
 def multi_cnn(dimx,dimy,num_classes,**kwargs):
     """
     This model is used to combine same or complementary features through a mini ensemble convolution model

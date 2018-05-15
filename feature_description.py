@@ -154,7 +154,7 @@ def cqt(features,path,dataset=None):
     bins_per_octave = features['bins_per_octave'][0]
     window = features['window'][0]
     mono=features['mono'][0]
-    wav, fs = read_audio('librosa',path,'chime_2016')
+    wav, fs = read_audio('librosa',path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
