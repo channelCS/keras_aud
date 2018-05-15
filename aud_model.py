@@ -90,9 +90,11 @@ class Functional_Model:
             lrmodel=M.feature_cnn_rnn(num_classes = self.num_classes, dimx = self.dimx,dimy = self.dimy, kwargs=self.kwargs)
         elif self.model=='CBRNN':
             lrmodel=M.cbrnn(num_classes = self.num_classes, dimx = self.dimx,dimy = self.dimy, kwargs=self.kwargs)
-        elif self.model=='MultiCNN':
+        elif self.model=='ParallelCNN':
+            lrmodel=M.parallel_cnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
+               elif self.model=='MultiCNN':
             lrmodel=M.multi_cnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
-        elif self.model=='ACRNN':
+		 elif self.model=='ACRNN':
             lrmodel=M.ACRNN(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)
         elif self.model=='TCNN':
             lrmodel=M.transpose_cnn(num_classes = self.num_classes, dimx = self.dimx, dimy = self.dimy, kwargs=self.kwargs)

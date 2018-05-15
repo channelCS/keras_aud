@@ -490,10 +490,62 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     
     return model
 
+############################ Parallel CNN : Parallel model combining same features ################################
+def parallel_cnn(dimx,dimy,num_classes,**kwargs):
+    """
+    This model is used to combine same features through a mini ensemble convolution model.
+    """
+    input_neurons = kwargs['kwargs'].get('input_neurons',200)
+    act1          = kwargs['kwargs'].get('act1','relu')
+    act2          = kwargs['kwargs'].get('act2','tanh')
+    act3          = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',[100,100])
+    filter_length  = kwargs['kwargs'].get('filter_length',[(2,2),(2,2)])
+    pool_size      = kwargs['kwargs'].get('pool_size',[(2,2),(2,2)])
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+
+    inpx = Input(shape=(1,dimx,dimy))
+    conv0 = Conv2D(filters=nb_filter[0],
+               kernel_size=filter_length[0],
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx)
+    pool0 = MaxPooling2D(pool_size=pool_size[0])(conv0)
+    flat0 = Flatten()(pool0)
+	
+	conv1 = Conv2D(filters=nb_filter[1],
+               kernel_size=filter_length[1],
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx)
+    pool1 = MaxPooling2D(pool_size=pool_size[1])(conv1)
+    flat1 = Flatten()(pool1)
+
+    combine = Merge(mode='concat')([flat1,flat2]) 
+    drop1 = Dropout(dropout)(combine)
+
+    # And finally we add the main logistic regression layer    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(drop1)
+    score = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model(inputs=[inpx],outputs=score)
+    if print_sum:
+        model.summary()
+    model.compile(loss=loss,
+              optimizer=optimizer,
+              metrics=[metrics])
+
+    return model
+
 ############################ Multi CNN : Ensemble model combining different features ################################
 def multi_cnn(dimx,dimy,num_classes,**kwargs):
     """
-    This model is used to combine same or complementary features through a mini ensemble convolution model
+    This model is used to combine complementary features through a mini ensemble convolution model
     based on their properties.
     """
     input_neurons = kwargs['kwargs'].get('input_neurons',200)
