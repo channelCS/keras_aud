@@ -482,6 +482,54 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     
     return model
 
+############################ Multi CNN ################################
+def multi_cnn(dimx,dimy,num_classes,**kwargs):
+    """
+    This model is used to combine same or complementary features through a mini ensemble convolution model
+    based on their properties.
+    """
+    input_neurons = kwargs['kwargs'].get('input_neurons',200)
+    act1          = kwargs['kwargs'].get('act1','relu')
+    act2          = kwargs['kwargs'].get('act2','tanh')
+    act3          = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',100)
+    filter_length  = kwargs['kwargs'].get('filter_length',3)
+    pool_size      = kwargs['kwargs'].get('pool_size',(2,2))
+    print_sum      = kwargs['kwargs'].get('print_sum',False)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+
+    inps,outs=[],[]
+    for i in range(len(dimy)):
+        inpx = Input(shape=(1,dimx,dimy[i]))
+        inps.append(inpx)
+        x = Conv2D(filters=nb_filter,
+                   kernel_size=filter_length,
+                   data_format='channels_first',
+                   padding='same',
+                   activation=act1)(inpx)
+        x = MaxPooling2D(pool_size=pool_size)(x)
+        x= Dropout(dropout)(x)
+        h = Flatten()(x)
+        outs.append(h)
+
+    combine = Merge(mode='concat')(outs) 
+    # And finally we add the main logistic regression layer    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    main_output = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model(inputs=inps,outputs=main_output)
+    if print_sum:
+        model.summary()
+    model.compile(loss=loss,
+              optimizer=optimizer,
+              metrics=[metrics])
+
+    return model
+
 ############################ Transpose CNN ################################
 def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     """
