@@ -32,7 +32,7 @@ def read_yaml(yaml_file):
             print(exc)
 
 
-def call_ftr_one(feature_name,featx,wav_file,dataset):
+def call_ftr_one(feature_name,featx,wav_file,library,dataset):
     # Don't put dateset=None on the abv line
     """
     Introduce features here
@@ -40,7 +40,7 @@ def call_ftr_one(feature_name,featx,wav_file,dataset):
     if feature_name == "mel":
         X = F.mel(featx,wav_file,dataset)
     elif feature_name == "logmel":
-        X = F.logmel(featx,wav_file,dataset)
+        X = F.logmel(featx,wav_file,library,dataset)
     elif feature_name == "cqt":
         X = F.cqt(featx,wav_file,dataset)
     elif feature_name == "spectralCentroid":

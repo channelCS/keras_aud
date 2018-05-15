@@ -17,6 +17,7 @@ import modules as M
 import feature_description as F
 import librosa
 import numpy as np
+from scikits.audiolab import wavread
 
 def save(feat,out_path):
     try:
@@ -46,28 +47,28 @@ def plot_sim(y,save=''):
     if save != '':
         plt.savefig(save)
 
-def plot_spec(y,save='',spec_type='log', hop_length=512, cmap='magma', show_filename=True, show_colorbar=True, plot=True):
+def plot_spec(y,fs=44100,save='',spec_type='log', hop_length=512, cmap='magma', show_filename=True, show_colorbar=True, plot=True):
     plt.figure()
     if spec_type in ['linear', 'log']:
         D = librosa.core.amplitude_to_db(np.abs(librosa.stft(y.ravel())),ref=np.max)
 
     elif spec_type.startswith('cqt'):
-        D = librosa.core.amplitude_to_db(librosa.cqt(y.ravel(), sr=44100),ref=np.max)
+        D = librosa.core.amplitude_to_db(librosa.cqt(y.ravel(), sr=fs),ref=np.max)
 
     if spec_type == 'linear':
-        specshow(data=D,sr=44100,y_axis='linear',x_axis='time',
+        specshow(data=D,sr=fs,y_axis='linear',x_axis='time',
                  hop_length=hop_length,cmap=cmap)
 
     elif spec_type == 'log':
-        specshow(data=D,sr=44100,y_axis='log',x_axis='time',
+        specshow(data=D,sr=fs,y_axis='log',x_axis='time',
                  hop_length=hop_length,cmap=cmap)
 
     elif spec_type == 'cqt_hz' or 'cqt':
-        specshow(data=D,sr=44100,y_axis='cqt_hz',x_axis='time',
+        specshow(data=D,sr=fs,y_axis='cqt_hz',x_axis='time',
                  hop_length=hop_length,cmap=cmap)
 
     elif spec_type == 'cqt_note':
-        specshow(data=D,sr=44100,y_axis='cqt_note',x_axis='time',
+        specshow(data=D,sr=fs,y_axis='cqt_note',x_axis='time',
                  hop_length=hop_length,cmap=cmap)
 
     if show_colorbar:
@@ -76,7 +77,7 @@ def plot_spec(y,save='',spec_type='log', hop_length=512, cmap='magma', show_file
     if save != '':
         plt.savefig(save)
 
-def extract_one(feature_name,wav_file,yaml_file='',dataset=None):
+def extract_one(feature_name,wav_file,yaml_file='',library='wavread',dataset=None):
     """
     This function extracts features from audio.
 
@@ -96,9 +97,21 @@ def extract_one(feature_name,wav_file,yaml_file='',dataset=None):
         except Exception as e:
             print("Make sure you add the {} to the YAML file".format(e))
             raise SystemExit
-        x = M.call_ftr_one(feature_name,featx,wav_file,dataset)
+        x = M.call_ftr_one(feature_name,featx,wav_file,library,dataset)
         print("Something wrong happened" if type(x) == 'int' else "Feature found")
         return x
     else:
         print("Invalid Feature Name")
 
+def get_samp(path):
+    """   
+    Input: str
+    Output: int
+        
+    """
+    try:
+#        _, fs = librosa.load(path)
+        _, fs, _ = wavread(path)
+    except:
+        raise Exception("File not found",path)
+    return fs

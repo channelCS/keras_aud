@@ -157,9 +157,9 @@ def cnn(dimx,dimy,num_classes,**kwargs):
     act2           = kwargs['kwargs'].get('act2','relu')
     act3           = kwargs['kwargs'].get('act3','softmax')
     dropout        = kwargs['kwargs'].get('dropout',0.1)
-    nb_filter      = kwargs['kwargs'].get('nb_filter',100)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',[])
     filter_length  = kwargs['kwargs'].get('filter_length',3)
-    pool_size      = kwargs['kwargs'].get('pool_size',(2,2))
+    pool_size      = kwargs['kwargs'].get('pool_size',[])
     print_sum      = kwargs['kwargs'].get('print_sum',False)
 
     loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
@@ -173,13 +173,21 @@ def cnn(dimx,dimy,num_classes,**kwargs):
     print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
     inpx = Input(shape=(1,dimx,dimy),name='inpx')
     
-    x = Conv2D(filters=nb_filter,
+    x = Conv2D(filters=nb_filter[0],
                kernel_size=filter_length,
                data_format='channels_first',
                padding='same',
                activation=act1)(inpx)
 
-    hx = MaxPooling2D(pool_size=pool_size)(x)
+    hx = MaxPooling2D(pool_size=pool_size[0])(x)
+    
+    x = Conv2D(filters=nb_filter[1],
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx)
+
+    hx = MaxPooling2D(pool_size=pool_size[1])(x)
     h = Flatten()(hx)
     wrap = Dense(input_neurons, activation=act2,name='wrap')(h)
     wrap= Dropout(dropout)(wrap)
