@@ -38,7 +38,7 @@ def check_dimension(feature,dimy,yaml_file):
         print "Correct dimension"
 
 def calculate_accuracy(truth,pred): 
-	"""
+    """
     Args:
       truth: Truth values (list)
       pred: Predicted values (list)
@@ -161,12 +161,12 @@ def calculate_eer(truth,pred,average=None):
             ER = (1-o) / (1+m) 
         class_eer.append(ER)
     if average == 'macro':
-    	return class_eer
+        return class_eer
     elif average is None:
-	    EER=np.mean(class_eer)
-	    return EER
-	else:
-		raise Exception("Invalid average.")
+        EER=np.mean(class_eer)
+        return EER
+    else:
+        raise Exception("Invalid average.")
 
 def mat_2d_to_3d(X, agg_num, hop):
     """
