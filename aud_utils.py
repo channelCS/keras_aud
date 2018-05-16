@@ -160,23 +160,13 @@ def calculate_eer(truth,pred,average=None):
             o = P1[1] - m * P1[0]
             ER = (1-o) / (1+m) 
         class_eer.append(ER)
-    
-    EER=np.mean(class_eer)
-    return EER
-
-def get_activations(model, layer, X_batch):
-    """
-    Args:
-      truth: Truth values (list)
-      pred: Predicted values (list)
-      average: None (mean) | 'macro' (class wise). 
-    Returns:
-      eer | class wise eer
-    """
-    get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)
-    activations = get_activations([X_batch,0])
-    print(activations)
-    return activations
+    if average == 'macro':
+    	return class_eer
+    elif average is None:
+	    EER=np.mean(class_eer)
+	    return EER
+	else:
+		raise Exception("Invalid average.")
 
 def mat_2d_to_3d(X, agg_num, hop):
     """
@@ -205,9 +195,9 @@ def mat_3d_to_nd(model, X):
     """
     Segment 3D array to ND array based on model name. 
     Args:
-      X: 3darray, (n_blocks, agg_num, n_in)
       model : name of the model ('DNN', ' RNN', CNN', 'CHOU', 'CRNN', 'CBRNN', 'MultiCNN',
               'TCNN','ACRNN', 'MultiACRNN')
+      X: 3darray, (n_blocks, agg_num, n_in)
     Returns:
       ndarray
     """
