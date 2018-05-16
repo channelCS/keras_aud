@@ -23,13 +23,13 @@ def save(feat,out_path):
     try:
         cPickle.dump(feat, open(out_path, 'wb'), protocol=cPickle.HIGHEST_PROTOCOL)
     except Exception as e:
-        raise Exception('Error while saving file {}. Exception Caught {}',out_path,e)
+        raise Exception('Error while saving file {}. Exception Caught {}'.format(out_path,e))
 
 def load(path):
     try:
         x = cPickle.load(open(path, 'rb'))
     except Exception as e:
-        raise Exception('Error while loading file {}. Exception Caught {}',path,e)
+        raise Exception('Error while loading file {}. Exception Caught {}'.format(path,e))
     return x
 
 def plot_fig(y,save='',x_axis='time', max_points=50000.0, offset=0.0, color='#333333', alpha=1.0, show_filename=True, plot=True):
