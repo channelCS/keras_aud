@@ -224,8 +224,12 @@ def equalise(tr_X):
 
     chan=[i for i in range(len(tr_X)) if len(tr_X[i])!=m]
     for k in chan:
-        a,b,d=tr_X[k].shape
-        newx=np.zeros([m,b,d])
+        if tr_X[k].ndim==3:
+            a,b,d=tr_X[k].shape
+            newx=np.zeros([m,b,d])
+        elif tr_X[k].ndim==4:
+            a,b,c,d=tr_X[k].shape
+            newx=np.zeros([m,b,c,d])
         j=0
         for i in range(len(tr_X[k])):
             newx[j]=tr_X[k][i]
