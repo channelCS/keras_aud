@@ -15,13 +15,14 @@ from shutil import copyfile
 
 def check_dimension(feature,dimy,yaml_file):
     """
-    Input: Got Dimension(Integer), YAML file from which feature was extracted
-    to get Expected Dimension(Integer).
-    Output: System Exit if Dimension Mismatch.
-    Checks whther the loaded function matches the dimension as
-    expected else raises SystemExit. Should be used only with
-    custom_check_ftr=True from parameters Else Make
-    custom_check_ftr=False.
+    Args:
+      feature: Name of the feature
+      dimy: Dimension of the extracted feature
+      yaml_file: YAML file from which feature was extracted
+    Returns:
+      None
+    Raises:
+      exception if dimensions mismatch
     """
     if feature in ['mel','logmel']:
         find='n_mels'
@@ -36,11 +37,13 @@ def check_dimension(feature,dimy,yaml_file):
     else:
         print "Correct dimension"
 
-def calculate_accuracy(truth,pred):   
-    """   
-    Input:
-    Output:
-        
+def calculate_accuracy(truth,pred): 
+	"""
+    Args:
+      truth: Truth values (list)
+      pred: Predicted values (list)
+    Returns:
+      Accuracy (float)
     """
     pos,neg=0,0 
     for i in range(0,len(pred)):
@@ -129,17 +132,20 @@ def cal_tp_fn_fp_tn(pred, truth, thres, average):
     else:
         raise Exception("Incorrect dimension!")    
     
-def calculate_eer(te_y,y_pred):
-    """   
-    Input:
-    Output:
-        
+def calculate_eer(truth,pred,average=None):
     """
-    x = len(te_y[0]) #num classes
+    Args:
+      truth: Truth values (list)
+      pred: Predicted values (list)
+      average: None (mean) | 'macro' (class wise). 
+    Returns:
+      eer | class wise eer
+    """
+    x = len(truth[0]) #num classes
     eps = 1E-6
     class_eer=[]
     for k in xrange(x):
-        f, t, _ = roc_curve(te_y[:,k], y_pred[:,k]) #it takes 1d array as input
+        f, t, _ = roc_curve(truth[:,k], pred[:,k]) #it takes 1d array as input
         Points = [(0,0)]+zip(f,t)
         for i, point in enumerate(Points):
             if point[0]+eps >= 1-point[1]:
@@ -159,10 +165,13 @@ def calculate_eer(te_y,y_pred):
     return EER
 
 def get_activations(model, layer, X_batch):
-    """   
-    Input:
-    Output:
-        
+    """
+    Args:
+      truth: Truth values (list)
+      pred: Predicted values (list)
+      average: None (mean) | 'macro' (class wise). 
+    Returns:
+      eer | class wise eer
     """
     get_activations = K.function([model.layers[0].input, K.learning_phase()], model.layers[layer].output)
     activations = get_activations([X_batch,0])
@@ -170,10 +179,14 @@ def get_activations(model, layer, X_batch):
     return activations
 
 def mat_2d_to_3d(X, agg_num, hop):
-    """   
-    Input:
-    Output:
-        
+    """
+    Segment 2D array to 3D segments. 
+    Args:
+      x: 2darray, (n_time, n_in)
+      agg_num: int, number of frames to concatenate. 
+      hop: int, number of hop frames. 
+    Returns:
+      3darray, (n_blocks, agg_num, n_in)
     """
     # pad to at least one block
     len_X, n_in = X.shape
@@ -189,10 +202,14 @@ def mat_2d_to_3d(X, agg_num, hop):
     return np.array(X3d)
 
 def mat_3d_to_nd(model, X):
-    """   
-    Input:
-    Output:
-        
+    """
+    Segment 3D array to ND array based on model name. 
+    Args:
+      X: 3darray, (n_blocks, agg_num, n_in)
+      model : name of the model ('DNN', ' RNN', CNN', 'CHOU', 'CRNN', 'CBRNN', 'MultiCNN',
+              'TCNN','ACRNN', 'MultiACRNN')
+    Returns:
+      ndarray
     """
     [batch_num, dimx, dimy]= X.shape 
     two_d   = ['DNN']
@@ -208,10 +225,12 @@ def mat_3d_to_nd(model, X):
     return X
 
 def equalise(tr_X):
-    """   
-    Input:
-    Output:
-        
+    """
+    Equalizes a list of nd arrays.
+    Args:
+      tr_X: A list containing 3d or 4d arrays with different dim0.
+    Returns:
+      tr_X: A list containing 3d or 4d arrays with same dim0.
     """
     chan=[]
     #l=len(max(tr_X[:]))
@@ -240,10 +259,17 @@ def equalise(tr_X):
     return tr_X
 
 def unpack_chime_2k16(path,wav_dev_fd,wav_eva_fd,meta_train_csv,meta_test_csv,label_csv):
-    """   
-    Input:
-    Output:
-        
+    """
+    Unpacks the chime 2016 dataset used for dcase 2016 task 4.
+    Args:
+      path: path to chime_home directory.
+      wav_dev_fd: path where development audios should be copied. 
+      wav_eva_fd: path where evaluation audios should be copied.
+      meta_train_csv: path to development csv file.
+      meta_test_csv: path to evaluation csv file.
+      label_csv: path to label csv file should be copied.
+    Returns:
+      None
     """
     p=path+'/chime_home'
     folder1='/'.join(meta_train_csv.split('/')[:-1])
