@@ -1,16 +1,15 @@
 """
 Created on Sat Apr 08 11:48:18 2018
 
-@author: Akshita Gupta
-Email - akshitadvlp@gmail.com
+author: @akshitac8 , @adityac8
 """
 
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import Conv2D, Conv2DTranspose, Merge
-from keras.layers import BatchNormalization, Lambda,Activation,Concatenate
+from keras.layers import Conv2D, Conv2DTranspose, merge, Merge
+from keras.layers import BatchNormalization, Lambda,Activation,concatenate,RepeatVector,dot
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
-from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling2D, GlobalAveragePooling2D
+from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling1D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
 from keras import optimizers
 from keras import backend as K
@@ -24,10 +23,6 @@ def kr(t,m=None):
         return t._keras_shape[m]
 
 ###########################FUNCTIONAL MODELS#############################################
-"""
-Functional Models can be accessed by 
-
-"""
     
 ########################### BASIC DNN #################################
 def dnn(dimx,dimy,num_classes,**kwargs):
@@ -490,62 +485,10 @@ def cbrnn(dimx,dimy,num_classes,**kwargs):
     
     return model
 
-############################ Parallel CNN : Parallel model combining same features ################################
-def parallel_cnn(dimx,dimy,num_classes,**kwargs):
-    """
-    This model is used to combine same features through a mini ensemble convolution model.
-    """
-    input_neurons = kwargs['kwargs'].get('input_neurons',200)
-    act1          = kwargs['kwargs'].get('act1','relu')
-    act2          = kwargs['kwargs'].get('act2','tanh')
-    act3          = kwargs['kwargs'].get('act3','softmax')
-    dropout        = kwargs['kwargs'].get('dropout',0.1)
-    nb_filter      = kwargs['kwargs'].get('nb_filter',[100,100])
-    filter_length  = kwargs['kwargs'].get('filter_length',[(2,2),(2,2)])
-    pool_size      = kwargs['kwargs'].get('pool_size',[(2,2),(2,2)])
-    print_sum      = kwargs['kwargs'].get('print_sum',False)
-
-    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
-    optimizer     = kwargs['kwargs'].get('optimizer','adam')
-    metrics       = kwargs['kwargs'].get('metrics','accuracy')
-
-    inpx = Input(shape=(1,dimx,dimy))
-    conv0 = Conv2D(filters=nb_filter[0],
-               kernel_size=filter_length[0],
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(inpx)
-    pool0 = MaxPooling2D(pool_size=pool_size[0])(conv0)
-    flat0 = Flatten()(pool0)
-	
-	conv1 = Conv2D(filters=nb_filter[1],
-               kernel_size=filter_length[1],
-               data_format='channels_first',
-               padding='same',
-               activation=act1)(inpx)
-    pool1 = MaxPooling2D(pool_size=pool_size[1])(conv1)
-    flat1 = Flatten()(pool1)
-
-    combine = Merge(mode='concat')([flat1,flat2]) 
-    drop1 = Dropout(dropout)(combine)
-
-    # And finally we add the main logistic regression layer    
-    wrap = Dense(input_neurons, activation=act2,name='wrap')(drop1)
-    score = Dense(num_classes,activation=act3,name='score')(wrap)
-    
-    model = Model(inputs=[inpx],outputs=score)
-    if print_sum:
-        model.summary()
-    model.compile(loss=loss,
-              optimizer=optimizer,
-              metrics=[metrics])
-
-    return model
-
 ############################ Multi CNN : Ensemble model combining different features ################################
 def multi_cnn(dimx,dimy,num_classes,**kwargs):
     """
-    This model is used to combine complementary features through a mini ensemble convolution model
+    This model is used to combine same or complementary features through a mini ensemble convolution model
     based on their properties.
     """
     input_neurons = kwargs['kwargs'].get('input_neurons',200)
@@ -700,93 +643,74 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
 
 
 ####################### ATTENTION MODEL ACRNN ##################################
-def block(Input):
-    #print kr(Input)
-    cnn = Conv2D(128, (3, 3), data_format='channels_first',padding="same", activation="linear", use_bias=False)(Input)
-    #cnn = BatchNormalization(axis=-1)(cnn)
 
-    cnn1 = Lambda(slice1, output_shape=slice1_output_shape)(cnn)
-    cnn2 = Lambda(slice2, output_shape=slice2_output_shape)(cnn)
-
-    cnn1 = Activation('linear')(cnn1)
-    cnn2 = Activation('sigmoid')(cnn2)
-
-    out = Multiply()([cnn1, cnn2])
-    return out
-
-def slice1(x):
-    return x[:,0:64, :, :]
-
-def slice2(x):
-    return x[:,64:128,:, :]
-
-def slice1_output_shape(input_shape):
-    return tuple([input_shape[0],64,input_shape[-2],input_shape[-1]])
-
-def slice2_output_shape(input_shape):
-    return tuple([input_shape[0],64,input_shape[-2],input_shape[-1]])
-
-# Attention weighted sum
-def outfunc(vects):
-    cla, att = vects    # (N, n_time, n_out), (N, n_time, n_out)
-    att = K.clip(att, 1e-7, 1.)
-    out = K.sum(cla * att, axis=1) / K.sum(att, axis=1)     # (N, n_out)
-    return out
 
 def ACRNN(dimx,dimy,num_classes,**kwargs):
-    print "ACRNN"
+    act1          = kwargs['kwargs'].get('act1','tanh')
+    nb_filter     = kwargs['kwargs'].get('nb_filter',72)
+    filter_length = kwargs['kwargs'].get('filter_length',4)
+    
+    act2          = kwargs['kwargs'].get('act2','linear')
+    rnn_units     = kwargs['kwargs'].get('rnn_units',[20,20])    
+    dropout       = kwargs['kwargs'].get('dropout',[0.1,0.2])
+    
+    act3          = kwargs['kwargs'].get('act3','softmax')
     print_sum      = kwargs['kwargs'].get('print_sum',False)
-
-    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    
+    loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','mse')
-
-    input_logmel = Input(shape=(1,dimx,dimy))
-    a1 = block(input_logmel)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1,2))(a1)
     
-    a2 = block(a1)
-    a2 = block(a2)
-    a2 = MaxPooling2D(pool_size=(1,2))(a2)
+    #input shape
+    main_input = Input(shape=(1,dimx,dimy))
     
-    a3 = block(a2)
-    a3 = block(a3)
-    a3 = MaxPooling2D(pool_size=(1,2))(a3)
+    #CNN
+    x = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1,use_bias=False)(main_input)
+    hx = MaxPooling2D(pool_size=(1,2))(x)
+    x = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1,use_bias=False)(hx)
+    hx = MaxPooling2D(pool_size=(1,2))(x)
+    wrap= Dropout(dropout[0])(hx)
+    x = Permute((2,1,3))(wrap)
+    a,b,c,d= kr(x)
+    x = Reshape((b*d,c))(x) 
     
-    a4 = block(a3)
-    a4 = block(a4)
-    a4 = MaxPooling2D(pool_size=(1,2))(a4)
+    #RNN LAYERS
+    rnnout = Bidirectional(GRU(rnn_units[0],activation=act2,  return_sequences=True),merge_mode='concat')(x)
+    rnnout_1      = Bidirectional(GRU(rnn_units[1],activation='sigmoid', return_sequences=True),merge_mode='concat')(rnnout)
+    w = Multiply()([rnnout, rnnout_1])
     
-    a5 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a4)
-    a5 = MaxPooling2D(pool_size=(1,2))(a5)
     
-    a,b,c,d=kr(a5)
-    a6 = Reshape((c*d,b))(a5)
+    #Attention starts
+    hidden_size = int(w._keras_shape[1])
+    a = Permute((2, 1))(w)
+    a = Reshape((hidden_size, a._keras_shape[1]))(a) 
+    a = TimeDistributed(Dense( a._keras_shape[1], activation='softmax',use_bias=False))(a)
+    a = Lambda(lambda x: K.mean(x, axis=1), name='dim_reduction')(a)
+    a = RepeatVector(dimy)(a)
+    a_probs = Permute((2, 1), name='attention_vec')(a)
+    attention_mul = merge([w,a_probs], name='attention_mul', mode='mul')
     
-    # Gated BGRU
-    rnnout = Bidirectional(GRU(128, activation='relu', return_sequences=True))(a6)
-    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(a6)
-    a7 = Multiply()([rnnout, rnnout_gate])
-    kr(a7)
-    # Attention
-    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a7)
-    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a7)
-    out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
-    kr(out)    
-    mymodel = Model([input_logmel], out)
+    attention_mul = GlobalMaxPooling1D()(attention_mul)
+    attention_mul = Dropout(dropout[1])(attention_mul)
+    
+    # compile Model
+    main_output = Dense(num_classes, activation=act3)(attention_mul)
+    mymodel = Model([main_input], main_output)
     if print_sum:
         mymodel.summary()
-    
-    #opt=optimizers.Adam(1e-3)
-    # Compile model
     mymodel.compile(loss=loss,
-                  optimizer=optimizer,
-                  metrics=[metrics])
-    
-    return mymodel 
+			  optimizer=optimizer,
+			  metrics=[metrics])
 
-
+    return mymodel
 
 
 
@@ -953,79 +877,3 @@ def cbrnn_dynamic(num_classes,dimx,dimy,acts,**kwargs):
               metrics=['accuracy'])
     
     return model
-
-# Beta Models
-
-def multi_ACRNN(input_neurons,dimx,dimy,num_classes,nb_filter,filter_length,act1,act2,act3,pool_size=(2,2),dropout=0.1):
-    print "ACRNN"
-    ###################################
-    feat0 = Input(shape=(1,dimx,dimy[0]))
-    a01 = block(feat0)
-    a01 = block(a01)
-    a01 = MaxPooling2D(pool_size=(1,2))(a01)
-
-    a02 = block(a01)
-    a02 = block(a02)
-    a02 = MaxPooling2D(pool_size=(1,2))(a02)
-
-    a03 = block(a02)
-    a03 = block(a03)
-    a03 = MaxPooling2D(pool_size=(1,2))(a03)
-
-    a04 = block(a03)
-    a04 = block(a04)
-    a04 = MaxPooling2D(pool_size=(1,2))(a04)
-
-    a05 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a04)
-    a05 = MaxPooling2D(pool_size=(1,2))(a05)
-
-    a,b,c,d=kr(a05)
-    a06 = Reshape((c*d,b))(a05)
-
-    feat1 = Input(shape=(1,dimx,dimy[1]))
-    a1 = block(feat1)
-    a1 = block(a1)
-    a1 = MaxPooling2D(pool_size=(1,2))(a1)
-    kr(a1)
-    a2 = block(a1)
-    a2 = block(a2)
-    a2 = MaxPooling2D(pool_size=(1,2))(a2) # (N, 240, 16, 128)
-    kr(a2)    
-    a3 = block(a2)
-    a3 = block(a3)
-    a3 = MaxPooling2D(pool_size=(1,2))(a3) # (N, 240, 8, 128)
-    kr(a3)    
-    a4 = block(a3)
-    a4 = block(a4)
-    a4 = MaxPooling2D(pool_size=(1,2))(a4) # (N, 240, 4, 128)
-    kr(a4)
-    a5 = Conv2D(256, (3, 3),data_format='channels_first', padding="same", activation="relu", use_bias=True)(a4)
-    a5 = MaxPooling2D(pool_size=(1,4))(a5) # (N, 240, 1, 256)
-    kr(a5)    
-    a,b,c,d=kr(a5)
-    a6 = Reshape((c*d,b))(a5) # (N, 240, 256)
-    kr(a6)
-    ##############################################
-    combine = Merge(mode='concat')([a06,a6])
-    ##############################################
-    # Gated BGRU
-    rnnout = Bidirectional(GRU(128, activation='linear', return_sequences=True))(combine)
-    rnnout_gate = Bidirectional(GRU(128, activation='sigmoid', return_sequences=True))(combine)
-    a7 = Multiply()([rnnout, rnnout_gate])
-    kr(a7)
-    # Attention
-    cla = TimeDistributed(Dense(num_classes, activation='sigmoid'), name='localization_layer')(a7)
-    att = TimeDistributed(Dense(num_classes, activation='softmax'))(a7)
-    out = Lambda(outfunc, output_shape=(num_classes,))([cla, att])
-    kr(out)    
-    mymodel = Model([feat0,feat1], out)
-    mymodel.summary()
-    
-    opt=optimizers.Adam(1e-3)
-    # Compile model
-    mymodel.compile(loss='binary_crossentropy',
-                  optimizer=opt,
-                  metrics=['accuracy'])
-    
-    return mymodel 
-
