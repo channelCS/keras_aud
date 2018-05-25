@@ -107,28 +107,6 @@ class Functional_Model:
             raise ValueError("Could not find model {}".format(self.model))
         return lrmodel
          
-class Static_Model:
-    def __init__(self,input_neurons,cross_validation,
-        dimx,dimy,num_classes,
-        nb_filter,filter_length,
-        model):
-        if model is None:
-            raise ValueError("No model passed")
-        self.cross_validation=cross_validation
-        self.input_neurons=input_neurons
-        self.model=model
-        self.nb_filter = nb_filter
-        self.filter_length =filter_length
-        self.dimx = dimx
-        self.dimy = dimy
-        self.num_classes=num_classes
-
-    def prepare_model(self):
-        if self.model=='CHOU':
-            lrmodel=M.conv_deconv_chou(dimx=self.dimx,dimy=self.dimy,nb_filter=self.nb_filter,num_classes=self.num_classes)
-        else:
-            raise ValueError("Could not find model {}".format(self.model))
-        return lrmodel
                 
 class Dynamic_Model:
     def __init__(self,model,num_classes,dimx,dimy,acts,**kwargs):

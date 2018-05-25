@@ -7,7 +7,7 @@ author: @akshitac8 , @adityac8
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, merge, Merge
-from keras.layers import BatchNormalization, Lambda,Activation,concatenate,RepeatVector,dot
+from keras.layers import BatchNormalization, Lambda,Activation,Concatenate,RepeatVector,dot
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling1D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
@@ -152,15 +152,18 @@ def cnn(dimx,dimy,num_classes,**kwargs):
     act2           = kwargs['kwargs'].get('act2','relu')
     act3           = kwargs['kwargs'].get('act3','softmax')
     dropout        = kwargs['kwargs'].get('dropout',0.1)
-    nb_filter      = kwargs['kwargs'].get('nb_filter',[])
+    nb_filter      = kwargs['kwargs'].get('nb_filter',128)
     filter_length  = kwargs['kwargs'].get('filter_length',3)
-    pool_size      = kwargs['kwargs'].get('pool_size',[])
+    pool_size      = kwargs['kwargs'].get('pool_size',2)
     print_sum      = kwargs['kwargs'].get('print_sum',False)
 
     loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','accuracy')
-
+    if type(nb_filter) is int:
+        nb_filter = [nb_filter] * 2
+    if type(pool_size) is int:
+        pool_size = [pool_size] * 2
     print "Model CNN"
     print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
     print "Neurons {} Dropout {}".format(input_neurons,dropout)
@@ -550,7 +553,7 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     act1          = kwargs['kwargs'].get('act1','tanh')
     act2          = kwargs['kwargs'].get('act2','tanh')
     act3          = kwargs['kwargs'].get('act3','sigmoid')
-    nb_filter      = kwargs['kwargs'].get('nb_filter',[])
+    nb_filter      = kwargs['kwargs'].get('nb_filter',128)
     pool_size      = kwargs['kwargs'].get('pool_size',(1,2))
     dropout        = kwargs['kwargs'].get('dropout',0.1)
     print_sum      = kwargs['kwargs'].get('print_sum',False)
@@ -558,6 +561,8 @@ def transpose_cnn(dimx,dimy,num_classes,**kwargs):
     loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
     metrics       = kwargs['kwargs'].get('metrics','mse')
+    if type(nb_filter) is int:
+        nb_filter = [nb_filter] * 2
     inpx = Input(shape=(1,dimx,dimy),name='inpx')
     x = Conv2D(filters=nb_filter[0],
                kernel_size=5,
@@ -603,47 +608,27 @@ def seq2seq(dimx,dimy,num_classes,**kwargs):
     print "seq2seq_lstm"
     
     ## encoder
-    encoder_input = Input(shape=(dimx,dimy))
-    
-    encoder=Bidirectional(LSTM(32,return_state=True))# Returns list of nos. of output states
-    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(encoder_input)
+    x = Input(shape=(dimx,dimy))
+    # Encoder
+    encoder=Bidirectional(LSTM(32,return_state=True))
+    encoder_outputs, forward_h, forward_c, backward_h, backward_c = encoder(x)
     state_h = Concatenate(axis=1)([forward_h, backward_h])
     state_c = Concatenate(axis=1)([forward_c, backward_c])
     encoder_states = [state_h, state_c]
+    #hidden_1 = Dense(128, activation='relu')(encoder_outputs)
+    #h = Dense(64, activation='relu')(hidden_1)
     
-#    a,b = kr(encoder_outputs)
-#    x = Reshape((b,1))(encoder_outputs)
-    
-    
-    ## decoder
-    decoder_input = Input(shape=(dimx,dimy), name='main_input')
-    
+    # Decoder
+    y = Input(shape=(dimx,dimy))
     decoder_lstm = LSTM(64, return_sequences=True, return_state=True)
-    decoder_outputs, _, _ = decoder_lstm(decoder_input,
+    decoder_outputs, _, _ = decoder_lstm(y,
                                          initial_state=encoder_states)
-    #h=Flatten()(decoder_outputs)
-    decoder_dense = Dense(40, activation='softmax')
-    decoder_outputs=decoder_dense(decoder_outputs)
-    model = Model([encoder_input, decoder_input], decoder_outputs)
-    model.summary()
-    model.compile(loss='categorical_crossentropy',
-			  optimizer='adam',
-			  metrics=['accuracy'])
-#
-#    ## encoder model 
-#    encoder_model = Model(encoder_input, encoder_states)
-#    
-#    ##decoder model
-#    
-#    decoder_state_input_h = Input(shape=(64,))
-#    decoder_state_input_c = Input(shape=(64,))
-#    decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-#    decoder_outputs, state_h, state_c = decoder_lstm(
-#    decoder_input, initial_state=decoder_states_inputs)
-#    decoder_states = [state_h, state_c]
-#    decoder_outputs = decoder_dense(decoder_outputs)
-#    decoder_model = Model( [decoder_input] + decoder_states_inputs,[decoder_outputs] + decoder_states)
-#  
+    #hidden_2 = Dense(128, activation='relu')(decoder_outputs)
+    r = Dense(40, activation='sigmoid')(decoder_outputs)
+    
+    model = Model([x,y], r)
+    model.compile(optimizer='adam', loss='categorical_crossentropy',metrics=['accuracy'])
+    
     return model
 
 
