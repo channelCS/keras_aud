@@ -14,7 +14,6 @@ from keras.utils import to_categorical
 import numpy as np
 import time
 import csv
-import cPickle
 import scipy
 
 np.random.seed(1234)

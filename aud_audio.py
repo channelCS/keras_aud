@@ -9,7 +9,7 @@ Modified: 2018.03.28
 from __future__ import print_function
 from __future__ import division
 import os
-import cPickle
+import pickle
 import modules as M
 import feature_description as F
 
@@ -37,7 +37,7 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
         if flag2:
             print(X.shape)
         out_path = fe_fd + '/' + na[0:-4] + '.f'
-        cPickle.dump( X, open(out_path, 'wb'), protocol=cPickle.HIGHEST_PROTOCOL )
+        pickle.dump( X, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
     print("extraction complete!")
 
 

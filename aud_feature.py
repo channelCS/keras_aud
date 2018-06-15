@@ -9,7 +9,7 @@ Modified: 2018.03.28
 from __future__ import print_function
 from __future__ import division
 import os
-import cPickle
+import pickle
 import matplotlib.pyplot as plt
 from librosa.display import waveplot
 from librosa.display import specshow
@@ -21,13 +21,13 @@ from scikits.audiolab import wavread
 
 def save(feat,out_path):
     try:
-        cPickle.dump(feat, open(out_path, 'wb'), protocol=cPickle.HIGHEST_PROTOCOL)
+        pickle.dump(feat, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL)
     except Exception as e:
         raise Exception('Error while saving file {}. Exception Caught {}'.format(out_path,e))
 
 def load(path):
     try:
-        x = cPickle.load(open(path, 'rb'))
+        x = pickle.load(open(path, 'rb'))
     except Exception as e:
         raise Exception('Error while loading file {}. Exception Caught {}'.format(path,e))
     return x
