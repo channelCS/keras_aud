@@ -167,7 +167,7 @@ def cqt(features,path,library='readwav'):
 def spectralCentroid(features,path,library='readwav'):
     fsx = features['fs'][0]
     mono=features['mono'][0]
-    normalize=features['normalize'][0]
+#    normalize=features['normalize'][0]
 
     wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
@@ -178,8 +178,8 @@ def spectralCentroid(features,path,library='readwav'):
     normalized_frequencies = np.linspace(0, 1, len(spectrum))
     X = sum(normalized_frequencies * normalized_spectrum)
     
-    if normalize:
-        X=feature_normalize(X)
+#    if normalize:
+#        X=feature_normalize(X)
          
     return X
     
@@ -190,7 +190,7 @@ def zcr(features,path,library='readwav'):
     hop_length = features['hop_length'][0]
     center = features['center'][0]
     pad = features['pad'][0]
-    normalize=features['normalize'][0]
+#    normalize=features['normalize'][0]
 
     wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
@@ -199,8 +199,8 @@ def zcr(features,path,library='readwav'):
     X=librosa.feature.zero_crossing_rate(wav, frame_length=frame_length, hop_length=hop_length, center=center, pad=pad)
     X=X.T
    
-    if normalize:
-        X=feature_normalize(X)
+#    if normalize:
+#        X=feature_normalize(X)
 
     return X
 
@@ -238,11 +238,11 @@ def SpectralRolloff(features,path,library='readwav'):
     hop_length = features['hop_length'][0]
     roll_percent = features['roll_percent'][0]
     freq = features['freq'][0]
-    normalize=features['normalize'][0]
-
+#    normalize=features['normalize'][0]
+    if not freq:
+        freq=None
     wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
-    print wav.shape
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
         
@@ -251,8 +251,8 @@ def SpectralRolloff(features,path,library='readwav'):
     X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=window_length, hop_length=hop_length, freq=freq, roll_percent=roll_percent)
     X = X.T
     
-    if normalize:
-        X=feature_normalize(X)
+#    if normalize:
+#        X=feature_normalize(X)
 
     return X
 

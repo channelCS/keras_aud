@@ -43,7 +43,7 @@ def call_ftr_one(feature_name,featx,wav_file,library):
         X = F.logmel(featx,wav_file,library)
     elif feature_name == "cqt":
         X = F.cqt(featx,wav_file,library)
-    elif feature_name == "spectralCentroid":
+    elif feature_name == "spectralcentroid":
         X = F.spectralCentroid(featx,wav_file,library)
     elif feature_name == "zcr":
         X = F.zcr(featx,wav_file,library)
@@ -51,12 +51,12 @@ def call_ftr_one(feature_name,featx,wav_file,library):
         X = F.stft(featx,wav_file,library)
     elif feature_name == "istft":
         X = F.istft(featx,wav_file,library)
-    elif feature_name == "SpectralRolloff":
+    elif feature_name == "spectralrolloff":
         X = F.SpectralRolloff(featx,wav_file,library)
     else:
         X = 1000
     return X
 
 def get_list():
-    features_list=['mel','logmel','cqt','spectralCentroid','zcr','spectralcentroid','stft','istft','SpectralRolloff']
+    features_list=['mel','logmel','cqt','zcr','spectralcentroid','stft','istft','spectralrolloff']
     return features_list

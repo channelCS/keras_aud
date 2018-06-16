@@ -97,8 +97,6 @@ stft:
     - 'zeros'
     padded:
     - True
-    frame_length:
-    - 1024
     center:
     - True
     window_type:
@@ -113,8 +111,10 @@ istft:
     - 512
     mono:
     - True
-    frame_length:
-    - 1024
+    window_length:
+    - 1024.
+    noverlap:
+    - 0
     center:
     - True
     window_type:
@@ -122,7 +122,7 @@ istft:
     normalize:
     - True
     
-SpectralRolloff:
+spectralrolloff:
     fs:
     - 44100.  
     hop_length:
@@ -138,7 +138,7 @@ SpectralRolloff:
     detrend:
     - False
     freq:
-    - None
+    - False
     roll_percent:
     - 0.95
     return_onesided:
