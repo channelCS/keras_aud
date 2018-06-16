@@ -270,8 +270,7 @@ def istft(features,path,library='readwav'):
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     stft_matrix = stft(features,path)
-    t, X = scipy.signal.istft(stft_matrix, fs, window=window_type, nperseg=window_length, noverlap=noverlap, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
-   
+    t, X = scipy.signal.istft(stft_matrix, fs, window='hann', nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)   
     if normalize:
         X=feature_normalize(X)
 
