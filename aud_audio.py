@@ -27,14 +27,16 @@ def get_samp(path):
         raise Exception("File not found",path)
     return fs
 
-def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr):
+def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,save):
     flag1 = True if 'names' in print_arr else False
     flag2 = True if 'shape' in print_arr else False
-    try:
-        M.CreateFolder(fe_fd)
-        M.rem_all_files(fe_fd)
-    except Exception as e:
-        raise Exception("Error.",e)
+    featdict={}
+    if save=='separate':
+        try:
+            M.CreateFolder(fe_fd)
+            M.rem_all_files(fe_fd)
+        except Exception as e:
+            raise Exception("Error.",e)
     
     names = [ na for na in os.listdir(wav_fd) if na.endswith('.wav') ]
     names = sorted(names)
@@ -48,11 +50,18 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr):
             print(na)
         if flag2:
             print(X.shape)
-        out_path = fe_fd + '/' + na[0:-4] + '.f'
-        pickle.dump( X, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
+        if save=='separate':
+            out_path = fe_fd + '/' + na[0:-4] + '.f'
+            pickle.dump( X, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
+        elif save=='single':
+            featdict[na[0:-4]]=X
+        else:
+            raise Exception("Unknown save option")
+    if save=='single':
+        pickle.dump( featdict, open(fe_fd+'.cpkl', 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
     print("extraction complete!")
 
-def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='readwav',print_arr=[]):
+def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='readwav',print_arr=[],save='separate'):
     """
     This function extracts features from audio.
 
@@ -76,7 +85,7 @@ def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='readwav',p
             featx=yaml_load[feature_name]
         except Exception as e:
             raise SystemExit("Make sure you add the {} to the YAML file".format(e))
-        x=call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr)
+        x=call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,save)
         print("Something wrong happened" if x==1000 else "Feature found")
     else:
         print("Invalid Feature Name")

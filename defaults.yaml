@@ -88,7 +88,7 @@ zcr:
 
 stft:
     fs:
-    - 44100.  
+    - 48000.  
     hop_length:
     - 512
     mono:
@@ -97,12 +97,22 @@ stft:
     - 'zeros'
     padded:
     - True
+    frame_length:
+    - 1024
+    window_length:
+    - 1024.
+    noverlap:
+    - 0
+    detrend:
+    - False
+    return_onesided:
+    - True
     center:
     - True
     window_type:
     - 'hamming'
     normalize:
-    - True
+    - False
     
 istft:
     fs:
