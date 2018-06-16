@@ -120,7 +120,7 @@ def logmel(features,path,library='readwav',dataset=None):
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    ham_win = np.hamming(1024)
+    ham_win = np.hamming(hamming_window)
     [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
 
@@ -211,24 +211,21 @@ def zcr(features,path,library='readwav',dataset=None):
 
 def stft(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
-    window = features['window'][0]
+    hamming_window = features['hamming_window'][0]
     mono=features['mono'][0]
-#   noverlap=features['noverlap'][0]
-#   detrend=features['detrend'][0]
-#   return_onesided=features['return_onesided'][0] 
-#   nperseg = features['nperseg'][0]
-#   nfft = features['nfft'][0]
-#   boundary = features['boundary'][0]
-#   padded = features['padded'][0]
-#   axis = features['axis'][0]
+    noverlap=features['noverlap'][0]
+    detrend=features['detrend'][0]
+    return_onesided=features['return_onesided'][0] 
+    boundary = features['boundary'][0]
+    padded = features['padded'][0]
     normalize=features['normalize'][0]
 
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    ham_win = np.hamming(1024)
-    f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=1024, noverlap=0, nfft=1024, detrend=False, return_onesided=True, boundary='zeros', padded=True, axis=0)
+    ham_win = np.hamming(hamming_window)
+    f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, boundary=boundary, padded=padded, axis=0)
    
     if normalize:
         X=feature_normalize(X)
@@ -242,15 +239,15 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-#    window = features['window'][0]
+    hamming_window = features['hamming_window'][0]
 #    noverlap=features['noverlap'][0]
 #    input_onesided=features['input_onesided'][0] 
 #    nperseg = features['nperseg'][0]
 #    nfft = features['nfft'][0]
 #    boundary = features['boundary'][0]
-#    hop_length = features['hop_length'][0]
-#    roll_percent = features['roll_percent'][0]
-#    freq = features['freq'][0]
+    hop_length = features['hop_length'][0]
+    roll_percent = features['roll_percent'][0]
+    freq = features['freq'][0]
     normalize=features['normalize'][0]
 
     wav, fs = read_audio(library,path,dataset)
@@ -262,8 +259,8 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
 #    stft_matrix = stft(features,path)
 #    print stft_matrix.shape
     ham_win = np.hamming(1024)
-    [f, t, x] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=1024, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode='psd' )
-    X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=1024, hop_length=512, freq=None, roll_percent=0.95)
+    [f, t, x] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
+    X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=hamming_window, hop_length=hop_length, freq=freq, roll_percent=roll_percent)
     X = X.T
     
     if normalize:
@@ -274,7 +271,7 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
 def istft(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
     mono=features['mono'][0]
-#   window = features['window'][0]
+    window = features['window'][0]
 #   noverlap=features['noverlap'][0]
 #   input_onesided=features['input_onesided'][0] 
 #   nperseg = features['nperseg'][0]
@@ -290,7 +287,7 @@ def istft(features,path,library='readwav',dataset=None):
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     stft_matrix = stft(features,path)
-    t, X = scipy.signal.istft(stft_matrix, fs, window='hann', nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
+    t, X = scipy.signal.istft(stft_matrix, fs, window=window, nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
    
     if normalize:
         X=feature_normalize(X)

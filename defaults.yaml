@@ -81,6 +81,10 @@ stft:
     - 512
     mono:
     - True
+    boundary:
+    - 'zeros'
+    padded:
+    - True
     frame_length:
     - 1024
     center:
@@ -100,7 +104,7 @@ istft:
     center:
     - True
     window:
-    - 'hamming'
+    - 'hann'
     
 SpectralRolloff:
     fs:
@@ -113,13 +117,15 @@ SpectralRolloff:
     - 'hamming'
     hamming_window:
     - 1024.
-    nperseg:
-    - 1024.
     noverlap:
     - 0
     detrend:
     - False
+    freq:
+    - None
+    roll_percent:
+    - 0.95
     return_onesided:
     - True
     mode:
-    - 'magnitude'
+    - 'psd'
