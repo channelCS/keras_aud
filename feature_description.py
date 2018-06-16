@@ -79,6 +79,8 @@ def mel(features,path,library='readwav',dataset=None):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio('librosa',path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -95,7 +97,8 @@ def mel(features,path,library='readwav',dataset=None):
     
     X = np.dot( X, melW.T )
     X = X[:, 0:]
-    X=feature_normalize(X)
+    if normalize:
+        X=feature_normalize(X)
     return X
 
 def logmel(features,path,library='readwav',dataset=None):
@@ -114,6 +117,8 @@ def logmel(features,path,library='readwav',dataset=None):
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio(library,path,dataset)
     #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
@@ -134,7 +139,9 @@ def logmel(features,path,library='readwav',dataset=None):
     X = np.log( X + 1e-8)
     X = X[:, 0:]
     
-    X=feature_normalize(X)
+    if normalize:
+        X=feature_normalize(X)
+    
     return X
 
 def cqt(features,path,library='readwav',dataset=None):
@@ -149,6 +156,8 @@ def cqt(features,path,library='readwav',dataset=None):
     bins_per_octave = features['bins_per_octave'][0]
     window = features['window'][0]
     mono=features['mono'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -156,6 +165,7 @@ def cqt(features,path,library='readwav',dataset=None):
     X=librosa.cqt(y=wav, hop_length=hop_length,sr=fs, n_bins=n_bins, bins_per_octave=bins_per_octave,window=window)
     X=X.T
     X=np.abs(np.log10(X))
+    
     return X
 
 
@@ -163,6 +173,8 @@ def cqt(features,path,library='readwav',dataset=None):
 def spectralCentroid(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
     mono=features['mono'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -171,23 +183,32 @@ def spectralCentroid(features,path,library='readwav',dataset=None):
     normalized_spectrum = spectrum / sum(spectrum)  # like a probability mass function
     normalized_frequencies = np.linspace(0, 1, len(spectrum))
     X = sum(normalized_frequencies * normalized_spectrum)
-            
+    
+    if normalize:
+        X=feature_normalize(X)
+         
     return X
     
 def zcr(features,path,library='readwav',dataset=None):
-   fsx = features['fs'][0]
-   mono=features['mono'][0]
-   frame_length = features['frame_length'][0]
-   hop_length = features['hop_length'][0]
-   center = features['center'][0]
-   pad = features['pad'][0]
-   wav, fs = read_audio(library,path,dataset)
-   wav=convert_mono(wav,mono)
-   if fs != fsx:
+    fsx = features['fs'][0]
+    mono=features['mono'][0]
+    frame_length = features['frame_length'][0]
+    hop_length = features['hop_length'][0]
+    center = features['center'][0]
+    pad = features['pad'][0]
+    normalize=features['normalize'][0]
+
+    wav, fs = read_audio(library,path,dataset)
+    wav=convert_mono(wav,mono)
+    if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-   X=librosa.feature.zero_crossing_rate(wav, frame_length=frame_length, hop_length=hop_length, center=center, pad=pad)
-   X=X.T
-   return X
+    X=librosa.feature.zero_crossing_rate(wav, frame_length=frame_length, hop_length=hop_length, center=center, pad=pad)
+    X=X.T
+   
+    if normalize:
+        X=feature_normalize(X)
+
+    return X
 
 def stft(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
@@ -201,6 +222,8 @@ def stft(features,path,library='readwav',dataset=None):
 #   boundary = features['boundary'][0]
 #   padded = features['padded'][0]
 #   axis = features['axis'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -208,6 +231,9 @@ def stft(features,path,library='readwav',dataset=None):
     ham_win = np.hamming(1024)
     f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=1024, noverlap=0, nfft=1024, detrend=False, return_onesided=True, boundary='zeros', padded=True, axis=0)
    
+    if normalize:
+        X=feature_normalize(X)
+
     return X    
 
 def SpectralRolloff(features,path,library='readwav',dataset=None):
@@ -226,6 +252,8 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
 #    hop_length = features['hop_length'][0]
 #    roll_percent = features['roll_percent'][0]
 #    freq = features['freq'][0]
+    normalize=features['normalize'][0]
+
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     print wav.shape
@@ -235,11 +263,14 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
 #    stft_matrix = stft(features,path)
 #    print stft_matrix.shape
     ham_win = np.hamming(1024)
-    [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=1024, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode='psd' )
-    print X.shape
-    rolloff = librosa.feature.spectral_rolloff(wav, sr=fs, S=X, n_fft=1024, hop_length=512, freq=None, roll_percent=0.95)
-    rolloff = rolloff.T
-    return rolloff
+    [f, t, x] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=1024, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode='psd' )
+    X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=1024, hop_length=512, freq=None, roll_percent=0.95)
+    X = X.T
+    
+    if normalize:
+        X=feature_normalize(X)
+
+    return X
 
 def istft(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
@@ -252,7 +283,9 @@ def istft(features,path,library='readwav',dataset=None):
 #   boundary = features['boundary'][0]
 #   time_axis = features['time_axis'][0]
 #   freq_axis = features['freq_axis'][0]
-#   
+    normalize=features['normalize'][0]
+
+  
     wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
@@ -260,4 +293,7 @@ def istft(features,path,library='readwav',dataset=None):
     stft_matrix = stft(features,path)
     t, X = scipy.signal.istft(stft_matrix, fs, window='hann', nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
    
+    if normalize:
+        X=feature_normalize(X)
+
     return X 
