@@ -5,7 +5,7 @@ mel:
     - 64
     mono:
     - True
-    hamming_window:
+    window_length:
     - 1024.
     noverlap:
     - 0
@@ -15,6 +15,8 @@ mel:
     - True
     mode:
     - 'magnitude'
+    normalize:
+    - True
 
 logmel:
     fs:
@@ -23,7 +25,7 @@ logmel:
     - 40
     mono:
     - True
-    hamming_window:
+    window_length:
     - 1024.
     noverlap:
     - 0
@@ -33,6 +35,8 @@ logmel:
     - True
     mode:
     - 'magnitude'
+    normalize:
+    - True
 
 cqt:
     fs:
@@ -45,8 +49,10 @@ cqt:
     - True
     bins_per_octave:
     - 24
-    window:
+    window_type:
     - 'hamming'
+    normalize:
+    - True
     
 spectralcentroid:
     fs:
@@ -59,8 +65,11 @@ spectralcentroid:
     - True
     bins_per_octave:
     - 24
-    window:
+    window_type:
     - 'hamming'
+    normalize:
+    - True
+
 zcr:
     fs:
     - 44100.  
@@ -74,6 +83,9 @@ zcr:
     - True
     pad:
     - False
+    normalize:
+    - True
+
 stft:
     fs:
     - 44100.  
@@ -89,8 +101,10 @@ stft:
     - 1024
     center:
     - True
-    window:
+    window_type:
     - 'hamming'
+    normalize:
+    - True
     
 istft:
     fs:
@@ -103,8 +117,10 @@ istft:
     - 1024
     center:
     - True
-    window:
+    window_type:
     - 'hann'
+    normalize:
+    - True
     
 SpectralRolloff:
     fs:
@@ -113,9 +129,9 @@ SpectralRolloff:
     - 512
     mono:
     - True
-    window:
+    window_type:
     - 'hamming'
-    hamming_window:
+    window_length:
     - 1024.
     noverlap:
     - 0
@@ -129,3 +145,5 @@ SpectralRolloff:
     - True
     mode:
     - 'psd'
+    normalize:
+    - True

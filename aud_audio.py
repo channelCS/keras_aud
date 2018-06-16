@@ -27,7 +27,7 @@ def get_samp(path):
         raise Exception("File not found",path)
     return fs
 
-def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
+def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr):
     flag1 = True if 'names' in print_arr else False
     flag2 = True if 'shape' in print_arr else False
     try:
@@ -43,7 +43,7 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
     for na in names:
         path = wav_fd + '/' + na
         # Introduce features here
-        X=M.call_ftr_one(feature_name,featx,path,library,dataset)
+        X=M.call_ftr_one(feature_name,featx,path,library)
         if flag1:
             print(na)
         if flag2:
@@ -52,7 +52,7 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
         pickle.dump( X, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
     print("extraction complete!")
 
-def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='wavread',print_arr=[],dataset=None):
+def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='readwav',print_arr=[]):
     """
     This function extracts features from audio.
 
@@ -70,16 +70,13 @@ def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='wavread',p
             Description of feature that should be printed 
     """
     # Introduce features here
-    if dataset is not None:
-        print("Dataset called is",dataset)
     if feature_name in M.get_list():
         yaml_load=M.read_yaml(yaml_file)
         try:            
             featx=yaml_load[feature_name]
         except Exception as e:
-            print("Make sure you add the {} to the YAML file".format(e))
-            raise SystemExit
-        x=call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset)
+            raise SystemExit("Make sure you add the {} to the YAML file".format(e))
+        x=call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr)
         print("Something wrong happened" if x==1000 else "Feature found")
     else:
         print("Invalid Feature Name")

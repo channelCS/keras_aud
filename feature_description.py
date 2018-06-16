@@ -43,25 +43,21 @@ def convert_mono(wav,mono):
     else:
         return wav  
 
-def read_audio(library,path,dataset=None):
+def read_audio(library,path,fsx):
     """   
     Input: 'str','str','str'
     Output: np.ndarray, int
         
     """
-    if dataset is not None:
-        library='librosa'
-    if library == 'librosa' and dataset == 'chime_2016': # chime 2016 with different sampling rate at development
-        wav,fs = librosa.load(path,sr=16000.)
-    elif library == 'librosa' and dataset == 'dcase_2016': # chime 2016 with different sampling rate at development
-        wav,fs = librosa.load(path,sr=44100.)
+    if library == 'librosa':
+        wav,fs = librosa.load(path,sr=fsx)
     elif library == 'readwav':
         wav,fs=readwav(path)
     else:
         raise Exception("Dataset not listed")
     return wav, fs
         
-def mel(features,path,library='readwav',dataset=None):
+def mel(features,path,library='readwav'):
     
     """
     This function extracts mel-spectrogram from audio.
@@ -70,27 +66,26 @@ def mel(features,path,library='readwav',dataset=None):
     """
     fsx=features['fs'][0]
     n_mels=features['n_mels'][0]
-    #print n_mels
     mono=features['mono'][0]
-    hamming_window=features['hamming_window'][0]
+    window_length=features['window_length'][0]
     noverlap=features['noverlap'][0]
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio('librosa',path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    ham_win = np.hamming(hamming_window)
-    [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
+    ham_win = np.hamming(window_length)
+    [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=window_length, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
 
     # define global melW, avoid init melW every time, to speed up.
     if globals().get('melW') is None:
         global melW
-        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=0., fmax=fsx/2. )
+        melW = librosa.filters.mel( fs, n_fft=window_length, n_mels=n_mels, fmin=0., fmax=fsx/2. )
         melW /= np.max(melW, axis=-1)[:,None]
     
     X = np.dot( X, melW.T )
@@ -99,7 +94,7 @@ def mel(features,path,library='readwav',dataset=None):
         X=feature_normalize(X)
     return X
 
-def logmel(features,path,library='readwav',dataset=None):
+def logmel(features,path,library='readwav'):
     """
     This function extracts log mel-spectrogram from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -108,26 +103,26 @@ def logmel(features,path,library='readwav',dataset=None):
     fsx=features['fs'][0]
     n_mels=features['n_mels'][0]
     mono=features['mono'][0]
-    hamming_window=features['hamming_window'][0]
+    window_length=features['window_length'][0]
     noverlap=features['noverlap'][0]
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     #print "fs before mono",fs #[DEBUG]
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    ham_win = np.hamming(hamming_window)
-    [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
+    ham_win = np.hamming(window_length)
+    [f, t, X] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=window_length, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
     X = X.T
 
     # define global melW, avoid init melW every time, to speed up.
     if globals().get('melW') is None:
         global melW
-        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=0., fmax=fs/2. )
+        melW = librosa.filters.mel( fs, n_fft=window_length, n_mels=n_mels, fmin=0., fmax=fs/2. )
         melW /= np.max(melW, axis=-1)[:,None]
         #print "mel"
     
@@ -140,7 +135,7 @@ def logmel(features,path,library='readwav',dataset=None):
     
     return X
 
-def cqt(features,path,library='readwav',dataset=None):
+def cqt(features,path,library='readwav'):
     """
     This function extracts constant q-transform from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -150,15 +145,15 @@ def cqt(features,path,library='readwav',dataset=None):
     hop_length = features['hop_length'][0]
     n_bins = features['n_bins'][0]
     bins_per_octave = features['bins_per_octave'][0]
-    window = features['window'][0]
+    window_type = features['window_type'][0]
     mono=features['mono'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    X=librosa.cqt(y=wav, hop_length=hop_length,sr=fs, n_bins=n_bins, bins_per_octave=bins_per_octave,window=window)
+    X=librosa.cqt(y=wav, hop_length=hop_length,sr=fs, n_bins=n_bins, bins_per_octave=bins_per_octave,window=window_type)
     X=X.T
     X=np.abs(np.log10(X))
     
@@ -169,12 +164,12 @@ def cqt(features,path,library='readwav',dataset=None):
 
 
 #def mfcc(features,path):
-def spectralCentroid(features,path,library='readwav',dataset=None):
+def spectralCentroid(features,path,library='readwav'):
     fsx = features['fs'][0]
     mono=features['mono'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
@@ -188,7 +183,7 @@ def spectralCentroid(features,path,library='readwav',dataset=None):
          
     return X
     
-def zcr(features,path,library='readwav',dataset=None):
+def zcr(features,path,library='readwav'):
     fsx = features['fs'][0]
     mono=features['mono'][0]
     frame_length = features['frame_length'][0]
@@ -197,7 +192,7 @@ def zcr(features,path,library='readwav',dataset=None):
     pad = features['pad'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
@@ -209,9 +204,9 @@ def zcr(features,path,library='readwav',dataset=None):
 
     return X
 
-def stft(features,path,library='readwav',dataset=None):
+def stft(features,path,library='readwav'):
     fsx = features['fs'][0]
-    hamming_window = features['hamming_window'][0]
+    window_length = features['window_length'][0]
     mono=features['mono'][0]
     noverlap=features['noverlap'][0]
     detrend=features['detrend'][0]
@@ -220,47 +215,40 @@ def stft(features,path,library='readwav',dataset=None):
     padded = features['padded'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-    ham_win = np.hamming(hamming_window)
-    f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, boundary=boundary, padded=padded, axis=0)
+    ham_win = np.hamming(window_length)
+    f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=window_length, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, boundary=boundary, padded=padded, axis=0)
    
     if normalize:
         X=feature_normalize(X)
 
     return X    
 
-def SpectralRolloff(features,path,library='readwav',dataset=None):
+def SpectralRolloff(features,path,library='readwav'):
     fsx = features['fs'][0]
     mono=features['mono'][0]
     noverlap=features['noverlap'][0]
     detrend=features['detrend'][0]
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
-    hamming_window = features['hamming_window'][0]
-#    noverlap=features['noverlap'][0]
-#    input_onesided=features['input_onesided'][0] 
-#    nperseg = features['nperseg'][0]
-#    nfft = features['nfft'][0]
-#    boundary = features['boundary'][0]
+    window_length = features['window_length'][0]
     hop_length = features['hop_length'][0]
     roll_percent = features['roll_percent'][0]
     freq = features['freq'][0]
     normalize=features['normalize'][0]
 
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     print wav.shape
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
-#    ham_win = np.hamming(1024)
-#    stft_matrix = stft(features,path)
-#    print stft_matrix.shape
-    ham_win = np.hamming(1024)
-    [f, t, x] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=hamming_window, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
-    X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=hamming_window, hop_length=hop_length, freq=freq, roll_percent=roll_percent)
+        
+    ham_win = np.hamming(window_length)
+    [f, t, x] = signal.spectral.spectrogram(wav,fs, window=ham_win, nperseg=window_length, noverlap=noverlap, detrend=detrend, return_onesided=return_onesided, mode=mode )
+    X = librosa.feature.spectral_rolloff(wav, sr=fs, S=x, n_fft=window_length, hop_length=hop_length, freq=freq, roll_percent=roll_percent)
     X = X.T
     
     if normalize:
@@ -268,26 +256,21 @@ def SpectralRolloff(features,path,library='readwav',dataset=None):
 
     return X
 
-def istft(features,path,library='readwav',dataset=None):
+def istft(features,path,library='readwav'):
     fsx = features['fs'][0]
     mono=features['mono'][0]
-    window = features['window'][0]
-#   noverlap=features['noverlap'][0]
-#   input_onesided=features['input_onesided'][0] 
-#   nperseg = features['nperseg'][0]
-#   nfft = features['nfft'][0]
-#   boundary = features['boundary'][0]
-#   time_axis = features['time_axis'][0]
-#   freq_axis = features['freq_axis'][0]
+    window_type = features['window_type'][0]
+    noverlap=features['noverlap'][0]
+    window_length = features['window_length'][0]
     normalize=features['normalize'][0]
 
   
-    wav, fs = read_audio(library,path,dataset)
+    wav, fs = read_audio(library,path,fsx)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     stft_matrix = stft(features,path)
-    t, X = scipy.signal.istft(stft_matrix, fs, window=window, nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
+    t, X = scipy.signal.istft(stft_matrix, fs, window=window_type, nperseg=window_length, noverlap=noverlap, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
    
     if normalize:
         X=feature_normalize(X)
