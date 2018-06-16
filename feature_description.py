@@ -5,11 +5,16 @@ author: @akshitac8
 """
 
 import numpy as np
-import os
 from scipy import signal
-from scikits.audiolab import wavread
 import librosa
 import wavio
+import scipy
+
+def readwav(path):
+    Struct = wavio.read( path )
+    wav = Struct.data.astype(float) / np.power(2, Struct.sampwidth*8-1)
+    fs = Struct.rate
+    return wav, fs
 
 def feature_normalize(feature_data):
     """   
@@ -46,24 +51,17 @@ def read_audio(library,path,dataset=None):
     """
     if dataset is not None:
         library='librosa'
-    if library == 'wavread':
-        wav,fs,enc = wavread(path)
-    elif library == 'librosa' and dataset == 'chime_2016': # chime 2016 with different sampling rate at development
+    if library == 'librosa' and dataset == 'chime_2016': # chime 2016 with different sampling rate at development
         wav,fs = librosa.load(path,sr=16000.)
     elif library == 'librosa' and dataset == 'dcase_2016': # chime 2016 with different sampling rate at development
         wav,fs = librosa.load(path,sr=44100.)
-    elif library =='readwav':
-        Struct = wavio.read( path )
-        wav = Struct.data.astype(float) / np.power(2, Struct.sampwidth*8-1)
-        fs = Struct.rate
+    elif library == 'readwav':
+        wav,fs=readwav(path)
     else:
         raise Exception("Dataset not listed")
     return wav, fs
         
-#def set_sampling_rate(sr):
-    
-        
-def mel(features,path,dataset=None):
+def mel(features,path,library='readwav',dataset=None):
     
     """
     This function extracts mel-spectrogram from audio.
@@ -82,8 +80,6 @@ def mel(features,path,dataset=None):
     return_onesided=features['return_onesided'][0]
     mode=features['mode'][0]
     wav, fs = read_audio('librosa',path,dataset)
-    #fsx = librosa.resample(wav,fs, 44100)
-    #wav, fs = librosa.load(path)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
@@ -102,7 +98,7 @@ def mel(features,path,dataset=None):
     X=feature_normalize(X)
     return X
 
-def logmel(features,path,library='wavread',dataset=None):
+def logmel(features,path,library='readwav',dataset=None):
     """
     This function extracts log mel-spectrogram from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -141,7 +137,7 @@ def logmel(features,path,library='wavread',dataset=None):
     X=feature_normalize(X)
     return X
 
-def cqt(features,path,dataset=None):
+def cqt(features,path,library='readwav',dataset=None):
     """
     This function extracts constant q-transform from audio.
     Make sure, you pass a dictionary containing all attributes
@@ -153,7 +149,7 @@ def cqt(features,path,dataset=None):
     bins_per_octave = features['bins_per_octave'][0]
     window = features['window'][0]
     mono=features['mono'][0]
-    wav, fs = read_audio('librosa',path,dataset)
+    wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     if fs != fsx:
         raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
@@ -164,41 +160,39 @@ def cqt(features,path,dataset=None):
 
 
 #def mfcc(features,path):
-import scipy
-
-def spectralCentroid(features,path):
-    #https://gist.github.com/endolith/359724/aa7fcc043776f16f126a0ccd12b599499509c3cc   
+def spectralCentroid(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
     mono=features['mono'][0]
-    wav, fs, enc = read_audio('wavread',path)
+    wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
-    assert fs==fsx
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
     spectrum = abs(np.fft.rfft(wav))
     normalized_spectrum = spectrum / sum(spectrum)  # like a probability mass function
     normalized_frequencies = np.linspace(0, 1, len(spectrum))
-    spectral_centroid = sum(normalized_frequencies * normalized_spectrum)
+    X = sum(normalized_frequencies * normalized_spectrum)
             
-    return spectral_centroid
+    return X
     
-def zcr(features,path):
+def zcr(features,path,library='readwav',dataset=None):
    fsx = features['fs'][0]
    mono=features['mono'][0]
-#   nceps = features['nceps'][0]
    frame_length = features['frame_length'][0]
    hop_length = features['hop_length'][0]
    center = features['center'][0]
    pad = features['pad'][0]
-   wav, fs, enc = read_audio('wavread',path)
+   wav, fs = read_audio(library,path,dataset)
    wav=convert_mono(wav,mono)
-   assert fs==fsx
+   if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
    X=librosa.feature.zero_crossing_rate(wav, frame_length=frame_length, hop_length=hop_length, center=center, pad=pad)
    X=X.T
    return X
 
-def stft(features,path):
-   fsx = features['fs'][0]
-   window = features['window'][0]
-   mono=features['mono'][0]
+def stft(features,path,library='readwav',dataset=None):
+    fsx = features['fs'][0]
+    window = features['window'][0]
+    mono=features['mono'][0]
 #   noverlap=features['noverlap'][0]
 #   detrend=features['detrend'][0]
 #   return_onesided=features['return_onesided'][0] 
@@ -207,48 +201,16 @@ def stft(features,path):
 #   boundary = features['boundary'][0]
 #   padded = features['padded'][0]
 #   axis = features['axis'][0]
-   wav, fs, enc = read_audio('wavread',path)
-   wav=convert_mono(wav,mono)
-   assert fs==fsx
-   ham_win = np.hamming(1024)
-   f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=1024, noverlap=0, nfft=1024, detrend=False, return_onesided=True, boundary='zeros', padded=True, axis=0)
-   return X
-    
-#def spectralFlux(spectra, rectify=False):
-#    """
-#    Compute the spectral flux between consecutive spectra
-#    """
-#    spectralFlux = []
-    
-    # Compute flux for zeroth spectrum
+    wav, fs = read_audio(library,path,dataset)
+    wav=convert_mono(wav,mono)
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
+    ham_win = np.hamming(1024)
+    f,t,X = scipy.signal.stft(wav, fs, window=ham_win, nperseg=1024, noverlap=0, nfft=1024, detrend=False, return_onesided=True, boundary='zeros', padded=True, axis=0)
+   
+    return X    
 
-#    flux = 0
-#    for bin in spectra[0]:
-#        flux = flux + abs(bin)
-      
-#   spectralFlux.append(flux)
-    
-    # Compute flux for subsequent spectra
-#    for s in range(1, len(spectra)):
-#        prevSpectrum = spectra[s - 1]
-#        spectrum = spectra[s]
-        
-#        flux = 0
-#        for bin in range(0, len(spectrum)):
-#            diff = abs(spectrum[bin]) - abs(prevSpectrum[bin])
-#            
-#            # If rectify is specified, only return positive values
-#            if rectify and diff < 0:
-#                diff = 0
-#            
-#            flux = flux + diff
-#            
-#        spectralFlux.append(flux)
-#        
-#    return spectralFlux
-    
-
-def SpectralRolloff(features,path):
+def SpectralRolloff(features,path,library='readwav',dataset=None):
     fsx = features['fs'][0]
     mono=features['mono'][0]
     noverlap=features['noverlap'][0]
@@ -264,10 +226,11 @@ def SpectralRolloff(features,path):
 #    hop_length = features['hop_length'][0]
 #    roll_percent = features['roll_percent'][0]
 #    freq = features['freq'][0]
-    wav, fs, enc = read_audio('wavread',path)
+    wav, fs = read_audio(library,path,dataset)
     wav=convert_mono(wav,mono)
     print wav.shape
-    assert fs==fsx
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
 #    ham_win = np.hamming(1024)
 #    stft_matrix = stft(features,path)
 #    print stft_matrix.shape
@@ -278,9 +241,9 @@ def SpectralRolloff(features,path):
     rolloff = rolloff.T
     return rolloff
 
-def istft(features,path):
-   fsx = features['fs'][0]
-   mono=features['mono'][0]
+def istft(features,path,library='readwav',dataset=None):
+    fsx = features['fs'][0]
+    mono=features['mono'][0]
 #   window = features['window'][0]
 #   noverlap=features['noverlap'][0]
 #   input_onesided=features['input_onesided'][0] 
@@ -290,21 +253,11 @@ def istft(features,path):
 #   time_axis = features['time_axis'][0]
 #   freq_axis = features['freq_axis'][0]
 #   
-   wav, fs, enc = read_audio('wavread',path)
-   #wav=convert_mono(wav,mono)
-   assert fs==fsx
-   stft_matrix = stft(features,path)
-   t, X = scipy.signal.istft(stft_matrix, fs, window='hann', nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
+    wav, fs = read_audio(library,path,dataset)
+    wav=convert_mono(wav,mono)
+    if fs != fsx:
+        raise Exception("Assertion Error. Sampling rate Found {} Expected {}".format(fs,fsx))
+    stft_matrix = stft(features,path)
+    t, X = scipy.signal.istft(stft_matrix, fs, window='hann', nperseg=None, noverlap=None, nfft=None, input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2)
    
-   return X 
-
-#def neural_feature_extracter():
-    
-    
-
-# hop length = winow length /4    
-# https://github.com/jsawruk/pymir/blob/master/pymir/SpectralFlux.py  
-
-#spectrogram is absolute of stft    
-    
-
+    return X 

@@ -8,6 +8,7 @@ This file contains modules to be used in `audio` as well as `feature` submodules
 import os
 import yaml
 import feature_description as F
+
 def CreateFolder( fd ):
     if not os.path.exists(fd):
         os.makedirs(fd)
@@ -30,7 +31,6 @@ def read_yaml(yaml_file):
             return yaml.load(stream)
         except yaml.YAMLError as exc:
             print(exc)
-
 
 def call_ftr_one(feature_name,featx,wav_file,library,dataset):
     # Don't put dateset=None on the abv line

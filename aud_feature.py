@@ -15,7 +15,6 @@ from librosa.display import specshow
 import modules as M
 import librosa
 import numpy as np
-from scikits.audiolab import wavread
 
 def save(feat,out_path):
     try:
@@ -100,16 +99,3 @@ def extract_one(feature_name,wav_file,yaml_file='',library='wavread',dataset=Non
         return x
     else:
         print("Invalid Feature Name")
-
-def get_samp(path):
-    """   
-    Input: str
-    Output: int
-        
-    """
-    try:
-#        _, fs = librosa.load(path)
-        _, fs, _ = wavread(path)
-    except:
-        raise Exception("File not found",path)
-    return fs

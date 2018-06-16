@@ -9,7 +9,7 @@ from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, Conv2DTranspose, merge, Merge
 from keras.layers import BatchNormalization, Lambda,Activation,Concatenate,RepeatVector,dot
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
-from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling1D, GlobalAveragePooling2D
+from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
 from keras import optimizers
 from keras import backend as K
@@ -72,7 +72,7 @@ def dnn(dimx,dimy,num_classes,**kwargs):
     act2          = kwargs['kwargs'].get('act2','relu')
     act3          = kwargs['kwargs'].get('act3','relu')
     act4          = kwargs['kwargs'].get('act4','softmax')
-    print_sum      = kwargs['kwargs'].get('print_sum',False)
+    print_sum     = kwargs['kwargs'].get('print_sum',False)
 
     loss          = kwargs['kwargs'].get('loss','binary_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')
@@ -246,7 +246,7 @@ def rnn(dimx,dimy,num_classes,**kwargs):
     act2          = kwargs['kwargs'].get('act2','relu')
     act3          = kwargs['kwargs'].get('act3','relu')
     act4          = kwargs['kwargs'].get('act4','sigmoid')
-    print_sum      = kwargs['kwargs'].get('print_sum',False)
+    print_sum     = kwargs['kwargs'].get('print_sum',False)
 
     loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
     optimizer     = kwargs['kwargs'].get('optimizer','adam')

@@ -11,6 +11,21 @@ from __future__ import division
 import os
 import pickle
 import modules as M
+import wavio 
+
+def get_samp(path):
+    """   
+    Input: str
+        path to audio file
+    Output: int
+        sampling rate of audio
+    """
+    try:
+        Struct = wavio.read( path )
+        fs = Struct.rate
+    except:
+        raise Exception("File not found",path)
+    return fs
 
 def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
     flag1 = True if 'names' in print_arr else False
@@ -19,14 +34,12 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
         M.CreateFolder(fe_fd)
         M.rem_all_files(fe_fd)
     except Exception as e:
-        print("Error.",e)
-        return    
+        raise Exception("Error.",e)
     
     names = [ na for na in os.listdir(wav_fd) if na.endswith('.wav') ]
     names = sorted(names)
     if names==[]:
-        print('Empty folder found!! Try Again.')
-        return
+        raise Exception('Empty folder found!! Try Again.')
     for na in names:
         path = wav_fd + '/' + na
         # Introduce features here
@@ -38,8 +51,6 @@ def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
         out_path = fe_fd + '/' + na[0:-4] + '.f'
         pickle.dump( X, open(out_path, 'wb'), protocol=pickle.HIGHEST_PROTOCOL )
     print("extraction complete!")
-
-
 
 def extract(feature_name,wav_fd=None,fe_fd=None,yaml_file='',library='wavread',print_arr=[],dataset=None):
     """
