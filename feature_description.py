@@ -71,8 +71,6 @@ def mel(features,path,library='readwav',dataset=None):
     fsx=features['fs'][0]
     n_mels=features['n_mels'][0]
     #print n_mels
-    fmin=features['fmin'][0]
-    fmax=features['fmax'][0]
     mono=features['mono'][0]
     hamming_window=features['hamming_window'][0]
     noverlap=features['noverlap'][0]
@@ -92,7 +90,7 @@ def mel(features,path,library='readwav',dataset=None):
     # define global melW, avoid init melW every time, to speed up.
     if globals().get('melW') is None:
         global melW
-        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=fmin, fmax=fmax )
+        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=0., fmax=fsx/2. )
         melW /= np.max(melW, axis=-1)[:,None]
     
     X = np.dot( X, melW.T )
@@ -109,8 +107,6 @@ def logmel(features,path,library='readwav',dataset=None):
     """
     fsx=features['fs'][0]
     n_mels=features['n_mels'][0]
-    fmin=features['fmin'][0]
-    fmax=features['fmax'][0]
     mono=features['mono'][0]
     hamming_window=features['hamming_window'][0]
     noverlap=features['noverlap'][0]
@@ -131,7 +127,7 @@ def logmel(features,path,library='readwav',dataset=None):
     # define global melW, avoid init melW every time, to speed up.
     if globals().get('melW') is None:
         global melW
-        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=fmin, fmax=fmax )
+        melW = librosa.filters.mel( fs, n_fft=hamming_window, n_mels=n_mels, fmin=0., fmax=fs/2. )
         melW /= np.max(melW, axis=-1)[:,None]
         #print "mel"
     
@@ -166,6 +162,9 @@ def cqt(features,path,library='readwav',dataset=None):
     X=X.T
     X=np.abs(np.log10(X))
     
+    if normalize:
+        X=feature_normalize(X)
+
     return X
 
 
