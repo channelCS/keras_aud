@@ -1,27 +1,9 @@
 """
 Created on Sat Apr 08 11:48:18 2018
-@author: Akshita Gupta
-Email - akshitadvlp@gmail.com
-
-Updated on 15/04/18
-@author: Aditya Arora
-Email - adityadvlp@gmail.com
+author: @akshitac8
 """
 
 import model_description as M
-from keras.models import load_model
-from keras.utils import to_categorical
-import numpy as np
-import time
-import csv
-import scipy
-
-np.random.seed(1234)
-
-import numpy as np
-import sys
-import scipy
-
 from keras import backend as K
 K.set_image_dim_ordering('th')
    

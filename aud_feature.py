@@ -8,13 +8,11 @@ Modified: 2018.03.28
 
 from __future__ import print_function
 from __future__ import division
-import os
 import pickle
 import matplotlib.pyplot as plt
 from librosa.display import waveplot
 from librosa.display import specshow
 import modules as M
-import feature_description as F
 import librosa
 import numpy as np
 from scikits.audiolab import wavread

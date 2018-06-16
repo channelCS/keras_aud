@@ -1,8 +1,7 @@
 """
 Created on Sat Apr 08 11:48:18 2018
 
-@author: Akshita Gupta
-Email - akshitadvlp@gmail.com
+author: @akshitac8
 """
 
 import numpy as np

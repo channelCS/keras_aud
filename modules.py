@@ -2,7 +2,7 @@
 """
 Created on Sat Apr 07 06:06:23 2018
 
-@author: aditya
+author: @aditya
 This file contains modules to be used in `audio` as well as `feature` submodules
 """
 import os

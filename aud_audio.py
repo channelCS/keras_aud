@@ -11,7 +11,6 @@ from __future__ import division
 import os
 import pickle
 import modules as M
-import feature_description as F
 
 def call_ftr(feature_name,featx,wav_fd,fe_fd,library,print_arr,dataset):
     flag1 = True if 'names' in print_arr else False

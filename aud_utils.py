@@ -2,10 +2,8 @@
 """
 Created on Sun Apr 29 15:26:13 2018
 
-@author: @author: Aditya Arora
-Email - adityadvlp@gmail.com
+author: @adityac8
 """
-from keras import backend as K
 import numpy as np
 from sklearn.metrics import roc_curve
 import modules as M
