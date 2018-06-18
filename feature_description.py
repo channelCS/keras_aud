@@ -38,10 +38,14 @@ def convert_mono(wav,mono):
     Output:
         
     """
-    if mono and wav.ndim==2:
-        return np.mean( wav, axis=-1 )
-    else:
-        return wav  
+    if wav.ndim==2:
+        if mono:
+            return np.mean( wav, axis=-1 )
+        elif mono == 'left':
+            return wav[0]
+        elif mono == 'right':
+            return wav[1]
+    return wav  
 
 def read_audio(library,path,fsx):
     """   
