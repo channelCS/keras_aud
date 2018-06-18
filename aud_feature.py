@@ -92,8 +92,7 @@ def extract_one(feature_name,wav_file,yaml_file='',library='wavread',dataset=Non
         try:            
             featx=yaml_load[feature_name]
         except Exception as e:
-            print("Make sure you add the {} to the YAML file".format(e))
-            raise SystemExit
+            raise Exception("Make sure you add the {} to the YAML file".format(e))
         x = M.call_ftr_one(feature_name,featx,wav_file,library,dataset)
         print("Something wrong happened" if type(x) == 'int' else "Feature found")
         return x

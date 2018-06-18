@@ -40,7 +40,7 @@ def convert_mono(wav,mono):
     """
     if mono=='mono' and wav.ndim==2:
         return np.mean( wav, axis=-1 )
-    if wav.shape[-1]==1 and mono in ['left','right']:
+    if wav.shape[-1]==1 and mono in ['left','right','stereo']:
         raise ValueError("Cannot take channels from mono audio")
     else:
         if mono =='left':

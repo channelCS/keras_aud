@@ -30,10 +30,9 @@ def check_dimension(feature,dimy,yaml_file):
         yaml_load=M.read_yaml(yaml_file)
     n1 = yaml_load[feature][find][0]
     if n1 != dimy:
-        print "Dimension Mismatch. Expected {} Found {}".format(n1,dimy)
-        raise SystemExit
+        raise ValueError("Dimension Mismatch. Expected {} Found {}".format(n1,dimy))
     else:
-        print "Correct dimension"
+        print("Correct dimension")
 
 def calculate_accuracy(truth,pred): 
     """
