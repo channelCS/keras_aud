@@ -38,13 +38,17 @@ def convert_mono(wav,mono):
     Output:
         
     """
-    if wav.ndim==2:
-        if mono:
-            return np.mean( wav, axis=-1 )
-        elif mono == 'left':
-            return wav[0]
-        elif mono == 'right':
-            return wav[1]
+    if mono=='mono' and wav.ndim==2:
+        return np.mean( wav, axis=-1 )
+    if wav.shape[-1]==1 and mono in ['left','right']:
+        raise ValueError("Cannot take channels from mono audio")
+    else:
+        if mono =='left':
+            return wav.T[0]
+        elif mono=='right':
+            return wav.T[1]
+        elif mono=='stereo':
+            return wav.T
     return wav  
 
 def read_audio(library,path,fsx):
