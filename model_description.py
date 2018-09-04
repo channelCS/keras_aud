@@ -11,7 +11,6 @@ from keras.layers import BatchNormalization, Lambda,Activation,Concatenate,Repea
 from keras.layers import LSTM, GRU, Reshape, Bidirectional, Permute,TimeDistributed
 from keras.layers import MaxPooling2D, AveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Multiply
-from keras import optimizers
 from keras import backend as K
 import numpy as np
 
@@ -702,8 +701,302 @@ def ACRNN(dimx,dimy,num_classes,**kwargs):
 
     return mymodel
 
+'''
+Architectures with more than one feature and models
+'''
+def ensemble_cnn(dimx0,dimy0,dimx1,dimy1,num_classes,**kwargs):
+    print "No Dropout used"
+    input_neurons  = kwargs['kwargs'].get('input_neurons',200)
+    act1           = kwargs['kwargs'].get('act1','relu')
+    act2           = kwargs['kwargs'].get('act2','sigmoid')
+    act3           = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',128)
+    filter_length  = kwargs['kwargs'].get('filter_length',3)
+    pool_size      = kwargs['kwargs'].get('pool_size',2)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','mse')
+    if type(filter_length) is int:
+        filter_length = [filter_length] * 2
+    if type(pool_size) is int:
+        pool_size = [pool_size] * 2
+    print "Model ensemble CNN"
+    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
+    print "Neurons {} Dropout {}".format(input_neurons,dropout)
+    print "Kernels {} Size {} Poolsize {}".format(nb_filter,filter_length,pool_size)
+    print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
+    
+    inpx0 = Input(shape=(1,dimx0,dimy0),name='inpx0')
+    inpx1 = Input(shape=(1,dimx1,dimy1),name='inpx1')
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    x0 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx0)
+    x1 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx1)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx0 = MaxPooling2D(pool_size=pool_size)(x0)
+    hx1 = MaxPooling2D(pool_size=pool_size)(x1)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    x1 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(hx0)
+    x2 = Conv2D(filters=nb_filter,
+              kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(hx1)
 
 
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx1 = MaxPooling2D(pool_size=pool_size)(x1)
+    hx2 = MaxPooling2D(pool_size=pool_size)(x2)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+
+    h0 = Flatten()(hx1)
+    h1 = Flatten()(hx2)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    combine = Concatenate()([h0,h1]) 
+    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    score = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model([inpx0,inpx1],score)
+    # sgd_x = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+#    op_x = optimizers.Adagrad()
+#    print "Adagrad optimiser used"
+    model.compile(loss=loss,
+			  optimizer=optimizer,
+			  metrics=[metrics])
+
+    return model
+
+
+def ensemble_rnn(dimx0,dimy0,dimx1,dimy1,num_classes,**kwargs):
+    print "No Dropout used"
+
+    rnn_units     = kwargs['kwargs'].get('rnn_units',32)
+    input_neurons  = kwargs['kwargs'].get('input_neurons',200)
+    act1           = kwargs['kwargs'].get('act1','relu')
+    act2           = kwargs['kwargs'].get('act2','sigmoid')
+    act3           = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    pool_size      = kwargs['kwargs'].get('pool_size',2)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+    
+    if type(pool_size) is int:
+        pool_size = [pool_size] * 2
+    print "Model Ensemble RNN"
+    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
+    print "Neurons {} Dropout {}".format(input_neurons,dropout)
+    print "Poolsize {}".format(pool_size)
+    print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
+    
+    inpx0 = Input(shape=(1,dimx0,dimy0),name='inpx0')
+    inpx1 = Input(shape=(1,dimx1,dimy1),name='inpx1')
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    
+    x0 = LSTM(rnn_units, activation='relu',return_sequences=True, unroll=True)(inpx0)
+    x1 = LSTM(rnn_units, activation='sigmoid',return_sequences=True, unroll=True)(inpx1)
+
+    x2 = LSTM(rnn_units, activation='relu',return_sequences=False, unroll=True)(x0)
+    x3 = LSTM(rnn_units, activation='relu',return_sequences=False, unroll=True)(x1)
+
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    h0 = Dense(input_neurons, activation=act1)(x2)
+    h1 = Dense(input_neurons, activation=act2)(x3)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    combine = Concatenate()([h0,h1]) 
+    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    score = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model([inpx0,inpx1],score)
+    # sgd_x = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+#    op_x = optimizers.Adagrad()
+#    print "Adagrad optimiser used"
+    model.compile(loss=loss,
+              optimizer=optimizer,
+              metrics=[metrics])
+
+    return model
+
+
+def ensemble_cnn_rnn(dimx0,dimy0,dimx1,dimy1,num_classes,**kwargs):
+    print "No Dropout used"
+
+    rnn_units     = kwargs['kwargs'].get('rnn_units',32)
+    input_neurons  = kwargs['kwargs'].get('input_neurons',200)
+    act1           = kwargs['kwargs'].get('act1','relu')
+    act2           = kwargs['kwargs'].get('act2','sigmoid')
+    act3           = kwargs['kwargs'].get('act3','softmax')
+    dropout        = kwargs['kwargs'].get('dropout',0.1)
+    nb_filter      = kwargs['kwargs'].get('nb_filter',100)
+    filter_length  = kwargs['kwargs'].get('filter_length',3)
+    pool_size      = kwargs['kwargs'].get('pool_size',2)
+
+    loss          = kwargs['kwargs'].get('loss','categorical_crossentropy')
+    optimizer     = kwargs['kwargs'].get('optimizer','adam')
+    metrics       = kwargs['kwargs'].get('metrics','accuracy')
+    if type(filter_length) is int:
+        filter_length = [filter_length] * 2
+    if type(pool_size) is int:
+        pool_size = [pool_size] * 2
+    print "Model Ensemble RNN"
+    print "Activation 1 {} 2 {} 3 {}".format(act1,act2,act3)
+    print "Neurons {} Dropout {}".format(input_neurons,dropout)
+    print "Kernels {} Size {} Poolsize {}".format(nb_filter,filter_length,pool_size)
+    print "Loss {} Optimizer {} Metrics {}".format(loss,optimizer,metrics)
+    
+    inpx0 = Input(shape=(1,dimx0,dimy0),name='inpx0')
+    inpx1 = Input(shape=(1,dimx1,dimy1),name='inpx1')
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    
+    x0 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx0)
+    x1 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(inpx1)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx0 = MaxPooling2D(pool_size=pool_size)(x0)
+    hx1 = MaxPooling2D(pool_size=pool_size)(x1)
+
+    wrap0= Dropout(dropout)(hx0)
+    wrap1= Dropout(dropout)(hx1)
+
+    x2 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap0)
+    x3 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap1)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx2 = MaxPooling2D(pool_size=pool_size)(x2)
+    hx3 = MaxPooling2D(pool_size=pool_size)(x3)
+
+    wrap2= Dropout(dropout)(hx2)
+    wrap3= Dropout(dropout)(hx3)
+
+    x4 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap2)
+    x5 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap3)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx4 = MaxPooling2D(pool_size=pool_size)(x4)
+    hx5 = MaxPooling2D(pool_size=pool_size)(x5)
+
+    wrap4= Dropout(dropout)(hx4)
+    wrap5= Dropout(dropout)(hx5)
+
+    x6 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap4)
+    x7 = Conv2D(filters=nb_filter,
+               kernel_size=filter_length,
+               data_format='channels_first',
+               padding='same',
+               activation=act1)(wrap5)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    hx6 = MaxPooling2D(pool_size=pool_size)(x6)
+    hx7 = MaxPooling2D(pool_size=pool_size)(x7)
+
+    wrap6= Dropout(dropout)(hx6)
+    wrap7= Dropout(dropout)(hx7)
+
+
+    x8 = Permute((2,1,3))(wrap6)
+    a,b,c,d= kr(x8)
+    x8 = Reshape((b*d,c))(x8)
+
+    x9 = Permute((2,1,3))(wrap7)
+    a,b,c,d= kr(x9)
+    x9 = Reshape((b*d,c))(x9)
+
+
+    x_0 = LSTM(rnn_units, activation='relu',return_sequences=True)(x8)
+    x_1 = LSTM(rnn_units, activation='sigmoid',return_sequences=True)(x9)
+
+    x_2 = LSTM(rnn_units, activation='relu',return_sequences=False)(x_0)
+    x_3 = LSTM(rnn_units, activation='relu',return_sequences=False)(x_1)
+
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    h0 = Dense(input_neurons, activation=act1)(x_2)
+    h1 = Dense(input_neurons, activation=act2)(x_3)
+
+    """""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""
+    combine = Concatenate()([h0,h1]) 
+    
+    wrap = Dense(input_neurons, activation=act2,name='wrap')(combine)
+    score = Dense(num_classes,activation=act3,name='score')(wrap)
+    
+    model = Model([inpx0,inpx1],score)
+    # sgd_x = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+#    op_x = optimizers.Adagrad()
+#    print "Adagrad optimiser used"
+    model.compile(loss=loss,
+              optimizer=optimizer,
+              metrics=[metrics])
+
+    return model
 ########################################### DYNAMIC MODELS ###########################################
 """
 Dynamic Models can be accessed by 
